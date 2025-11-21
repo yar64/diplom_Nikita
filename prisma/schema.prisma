@@ -1,0 +1,244 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String    // для авторизации
+  avatar        String?   // URL аватарки
+  bio           String?   // О себе
+  role          UserRole  @default(STUDENT)
+  
+  // Связи
+  goals         Goal[]
+  userSkills    UserSkill[]
+  enrollments   Enrollment[]
+  reviews       Review[]
+  userProgress  UserProgress[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Goal {
+  id            String      @id @default(cuid())
+  title         String      // "Выучить английский"
+  description   String?     // Описание цели
+  categoryId    String      // Связь с категорией
+  targetLevel   Int         // Целевой уровень (1-10)
+  currentLevel  Int         // Текущий уровень (1-10)
+  deadline      DateTime?   // Дедлайн
+  timePerDay    Int?        // Минут в день для обучения
+  status        GoalStatus  @default(ACTIVE)
+  
+  // Связи
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category    @relation(fields: [categoryId], references: [id])
+  goalMaterials GoalMaterial[]
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model UserSkill {
+  id          String   @id @default(cuid())
+  name        String   // Название навыка
+  categoryId  String   // Категория навыка
+  level       Int      // Текущий уровень (1-10)
+  description String?  // Описание/заметки
+  
+  // Связи
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String      // "Программирование", "Дизайн"
+  slug        String      @unique // URL-friendly имя
+  description String?
+  image       String?     // URL изображения категории
+  
+  // Связи
+  goals       Goal[]
+  userSkills  UserSkill[]
+  courses     Course[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Course {
+  id          String        @id @default(cuid())
+  title       String        // Название курса
+  description String?
+  image       String?       // URL обложки курса
+  price       Float?        // Цена (null = бесплатный)
+  duration    Int?          // Продолжительность в минутах
+  level       CourseLevel   @default(BEGINNER)
+  rating      Float?        // Средний рейтинг
+  studentsCount Int         @default(0) // Количество студентов
+  
+  // Связи
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+  instructorId String
+  instructor  Instructor    @relation(fields: [instructorId], references: [id])
+  enrollments Enrollment[]
+  reviews     Review[]
+  materials   CourseMaterial[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([instructorId])
+}
+
+model Instructor {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  bio         String?
+  avatar      String?   // URL аватарки
+  rating      Float?    // Средний рейтинг
+  studentsCount Int     @default(0) // Общее количество студентов
+  
+  // Связи
+  courses     Course[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Enrollment {
+  id          String        @id @default(cuid())
+  progress    Float         @default(0) // Прогресс в %
+  
+  // Связи
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userProgress UserProgress[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+model Review {
+  id          String  @id @default(cuid())
+  rating      Int     // 1-5
+  comment     String?
+  
+  // Связи
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+model CourseMaterial {
+  id          String          @id @default(cuid())
+  title       String          // Название материала
+  type        MaterialType    // VIDEO, ARTICLE, QUIZ, etc.
+  content     String?         // URL или текст контента
+  duration    Int?            // Продолжительность в минутах
+  order       Int             // Порядок в курсе
+  
+  // Связи
+  courseId    String
+  course      Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userProgress UserProgress[]
+  goalMaterials GoalMaterial[] // Добавлено обратное отношение
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([courseId])
+}
+
+model UserProgress {
+  id          String            @id @default(cuid())
+  completed   Boolean           @default(false)
+  timeSpent   Int?              // Время в минутах
+  
+  // Связи
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialId  String
+  material    CourseMaterial    @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  enrollmentId String
+  enrollment  Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([userId, materialId])
+}
+
+model GoalMaterial {
+  id        String @id @default(cuid())
+  
+  // Связи
+  goalId    String
+  goal      Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  
+  materialId String
+  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  
+  assignedAt DateTime @default(now())
+  
+  @@unique([goalId, materialId])
+}
+
+// Enums
+enum UserRole {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum MaterialType {
+  VIDEO
+  ARTICLE
+  QUIZ
+  EXERCISE
+  PROJECT
+}
