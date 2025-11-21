@@ -1,244 +1,382 @@
 // prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") 
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String    // для авторизации
-  avatar        String?   // URL аватарки
-  bio           String?   // О себе
-  role          UserRole  @default(STUDENT)
-  
-  // Связи
-  goals         Goal[]
-  userSkills    UserSkill[]
-  enrollments   Enrollment[]
-  reviews       Review[]
-  userProgress  UserProgress[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  avatar    String?
+  bio       String?
+  timezone  String?  @default("UTC")
+  dailyGoal Int?     @default(30)
+  isPublic  Boolean  @default(false)
+  role      UserRole @default(USER)
+
+  // Relations
+  skills               UserSkill[]
+  projects             Project[]
+  learningPaths        LearningPath[]
+  sessions             StudySession[]
+  goals                Goal[]
+  stats                UserStats?
+  givenReviews         Review[]          @relation("GivenReviews")
+  receivedReviews      Review[]          @relation("ReceivedReviews")
+  notifications        Notification[]
+  communityMemberships CommunityMember[]
+  communityPosts       CommunityPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
 }
 
-model Goal {
-  id            String      @id @default(cuid())
-  title         String      // "Выучить английский"
-  description   String?     // Описание цели
-  categoryId    String      // Связь с категорией
-  targetLevel   Int         // Целевой уровень (1-10)
-  currentLevel  Int         // Текущий уровень (1-10)
-  deadline      DateTime?   // Дедлайн
-  timePerDay    Int?        // Минут в день для обучения
-  status        GoalStatus  @default(ACTIVE)
-  
-  // Связи
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category      Category    @relation(fields: [categoryId], references: [id])
-  goalMaterials GoalMaterial[]
-  
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+model Skill {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  category    String
+  icon        String?
+  difficulty  Difficulty @default(BEGINNER)
 
-  @@index([userId])
+  // Relations
+  userSkills        UserSkill[]
+  projectSkills     ProjectSkill[]
+  learningResources LearningResource[]
+  milestones        LearningMilestone[]
+  goals             Goal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("skills")
 }
 
 model UserSkill {
-  id          String   @id @default(cuid())
-  name        String   // Название навыка
-  categoryId  String   // Категория навыка
-  level       Int      // Текущий уровень (1-10)
-  description String?  // Описание/заметки
-  
-  // Связи
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category @relation(fields: [categoryId], references: [id])
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String      @id @default(cuid())
+  userId     String
+  skillId    String
+  level      SkillLevel  @default(NOVICE)
+  experience Int         @default(0)
+  isLearning Boolean     @default(true)
+  goalLevel  SkillLevel?
+  goalDate   DateTime?
+  progress   Float       @default(0)
 
-  @@index([userId])
+  // Relations
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill    Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  sessions StudySession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, skillId])
+  @@map("user_skills")
 }
 
-model Category {
+model Project {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  repository  String?
+  demoUrl     String?
+  status      ProjectStatus @default(IN_PROGRESS)
+  userId      String
+
+  // Relations
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills ProjectSkill[]
+
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectSkill {
+  id        String @id @default(cuid())
+  projectId String
+  skillId   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, skillId])
+  @@map("project_skills")
+}
+
+model LearningPath {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  isPublic    Boolean @default(false)
+  userId      String
+
+  // Relations
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones LearningMilestone[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_paths")
+}
+
+model LearningMilestone {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  order          Int
+  isCompleted    Boolean   @default(false)
+  completedAt    DateTime?
+  learningPathId String
+  skillId        String
+
+  // Relations
+  learningPath LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  skill        Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_milestones")
+}
+
+model StudySession {
   id          String      @id @default(cuid())
-  name        String      // "Программирование", "Дизайн"
-  slug        String      @unique // URL-friendly имя
+  duration    Int
   description String?
-  image       String?     // URL изображения категории
-  
-  // Связи
-  goals       Goal[]
-  userSkills  UserSkill[]
-  courses     Course[]
-  
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-}
-
-model Course {
-  id          String        @id @default(cuid())
-  title       String        // Название курса
-  description String?
-  image       String?       // URL обложки курса
-  price       Float?        // Цена (null = бесплатный)
-  duration    Int?          // Продолжительность в минутах
-  level       CourseLevel   @default(BEGINNER)
-  rating      Float?        // Средний рейтинг
-  studentsCount Int         @default(0) // Количество студентов
-  
-  // Связи
-  categoryId  String
-  category    Category      @relation(fields: [categoryId], references: [id])
-  instructorId String
-  instructor  Instructor    @relation(fields: [instructorId], references: [id])
-  enrollments Enrollment[]
-  reviews     Review[]
-  materials   CourseMaterial[]
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@index([categoryId])
-  @@index([instructorId])
-}
-
-model Instructor {
-  id          String    @id @default(cuid())
-  name        String
-  email       String    @unique
-  bio         String?
-  avatar      String?   // URL аватарки
-  rating      Float?    // Средний рейтинг
-  studentsCount Int     @default(0) // Общее количество студентов
-  
-  // Связи
-  courses     Course[]
-  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Enrollment {
-  id          String        @id @default(cuid())
-  progress    Float         @default(0) // Прогресс в %
-  
-  // Связи
+  date        DateTime    @default(now())
+  sessionType SessionType @default(PRACTICE)
+  efficiency  Int?
   userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId    String
-  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  userProgress UserProgress[]
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  userSkillId String
 
-  @@unique([userId, courseId])
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSkill UserSkill @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("study_sessions")
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  userId      String
+  skillId     String
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("goals")
+}
+
+model LearningResource {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  type        ResourceType
+  difficulty  Difficulty
+  duration    Int?
+  rating      Float?
+  skillId     String
+
+  // Relations
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("learning_resources")
 }
 
 model Review {
+  id         String @id @default(cuid())
+  title      String
+  content    String
+  rating     Int
+  reviewerId String
+  revieweeId String
+
+  // Relations
+  reviewer User @relation("GivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee User @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+model Notification {
+  id      String           @id @default(cuid())
+  title   String
+  message String
+  type    NotificationType
+  isRead  Boolean          @default(false)
+  userId  String
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model UserStats {
+  id              String @id @default(cuid())
+  userId          String @unique
+  totalStudyTime  Int    @default(0)
+  completedGoals  Int    @default(0)
+  skillsLearned   Int    @default(0)
+  currentStreak   Int    @default(0)
+  longestStreak   Int    @default(0)
+  weeklyProgress  Float  @default(0)
+  monthlyProgress Float  @default(0)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@map("user_stats")
+}
+
+model Community {
   id          String  @id @default(cuid())
-  rating      Int     // 1-5
-  comment     String?
-  
-  // Связи
+  name        String  @unique
+  description String?
+  isPublic    Boolean @default(true)
+  avatar      String?
+
+  // Relations
+  members CommunityMember[]
+  posts   CommunityPost[]
+
+  createdAt DateTime @default(now())
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  id          String        @id @default(cuid())
+  communityId String
   userId      String
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId    String
-  course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role        CommunityRole @default(MEMBER)
 
-  @@unique([userId, courseId])
+  // Relations
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@map("community_members")
 }
 
-model CourseMaterial {
-  id          String          @id @default(cuid())
-  title       String          // Название материала
-  type        MaterialType    // VIDEO, ARTICLE, QUIZ, etc.
-  content     String?         // URL или текст контента
-  duration    Int?            // Продолжительность в минутах
-  order       Int             // Порядок в курсе
-  
-  // Связи
-  courseId    String
-  course      Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  userProgress UserProgress[]
-  goalMaterials GoalMaterial[] // Добавлено обратное отношение
-  
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+model CommunityPost {
+  id          String @id @default(cuid())
+  title       String
+  content     String
+  communityId String
+  authorId    String
 
-  @@index([courseId])
-}
+  // Relations
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-model UserProgress {
-  id          String            @id @default(cuid())
-  completed   Boolean           @default(false)
-  timeSpent   Int?              // Время в минутах
-  
-  // Связи
-  userId      String
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  materialId  String
-  material    CourseMaterial    @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  enrollmentId String
-  enrollment  Enrollment        @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([userId, materialId])
-}
-
-model GoalMaterial {
-  id        String @id @default(cuid())
-  
-  // Связи
-  goalId    String
-  goal      Goal   @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  
-  materialId String
-  material   CourseMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  
-  assignedAt DateTime @default(now())
-  
-  @@unique([goalId, materialId])
+  @@map("community_posts")
 }
 
 // Enums
 enum UserRole {
-  STUDENT
-  INSTRUCTOR
+  USER
   ADMIN
+  MENTOR
 }
 
-enum GoalStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-}
-
-enum CourseLevel {
+enum Difficulty {
   BEGINNER
   INTERMEDIATE
   ADVANCED
+  EXPERT
 }
 
-enum MaterialType {
-  VIDEO
-  ARTICLE
-  QUIZ
-  EXERCISE
+enum SkillLevel {
+  NOVICE
+  BEGINNER
+  COMPETENT
+  PROFICIENT
+  EXPERT
+}
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum SessionType {
+  THEORY
+  PRACTICE
   PROJECT
+  REVIEW
+  EXAM
+}
+
+enum ResourceType {
+  ARTICLE
+  VIDEO
+  COURSE
+  DOCUMENTATION
+  BOOK
+  TUTORIAL
+  EXERCISE
+}
+
+enum NotificationType {
+  GOAL_REMINDER
+  MILESTONE_ACHIEVED
+  NEW_SKILL_SUGGESTION
+  WEEKLY_PROGRESS
+  COMMUNITY_INVITE
+  MENTOR_FEEDBACK
+  GOAL_COMPLETED
+  STREAK_REMINDER
+}
+
+enum CommunityRole {
+  MEMBER
+  MODERATOR
+  ADMIN
 }
