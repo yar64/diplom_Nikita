@@ -9,13 +9,18 @@ export function Table({
   'data-testid': testId,
   ...props 
 }) {
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div 
         className="bg-white rounded-2xl border border-gray-200 p-8 text-center"
         data-testid={testId ? `${testId}-empty` : undefined}
       >
-        <p className="text-gray-500">{emptyMessage}</p>
+        {/* Проверяем тип emptyMessage - если строка, используем p, если JSX - рендерим как есть */}
+        {typeof emptyMessage === 'string' ? (
+          <p className="text-gray-500">{emptyMessage}</p>
+        ) : (
+          emptyMessage
+        )}
       </div>
     );
   }
