@@ -1,7 +1,7 @@
 // actions/study-session.actions.ts
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 import { SessionType } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 

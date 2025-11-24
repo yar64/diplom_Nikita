@@ -1,7 +1,7 @@
 // actions/dashboard.actions.ts
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 
 export async function getDashboardStats() {
   try {
@@ -13,11 +13,20 @@ export async function getDashboardStats() {
       recentUsers,
       popularSkills
     ] = await Promise.all([
+      // Основная статистика
       prisma.user.count(),
       prisma.userSkill.count({ where: { isLearning: true } }),
       prisma.project.count({ where: { status: 'IN_PROGRESS' } }),
-      prisma.studySession.aggregate({ _sum: { duration: true } }),
+      prisma.studySession.aggregate({ 
+        _sum: { duration: true },
+        where: {
+          createdAt: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) // Текущий месяц
+          }
+        }
+      }),
       
+      // Недавние пользователи
       prisma.user.findMany({
         take: 5,
         orderBy: { createdAt: 'desc' },
@@ -28,6 +37,7 @@ export async function getDashboardStats() {
         }
       }),
       
+      // Популярные навыки
       prisma.skill.findMany({
         take: 5,
         orderBy: {

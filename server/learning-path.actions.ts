@@ -1,7 +1,7 @@
 // actions/learning-path.actions.ts
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 export async function createLearningPath(data: {

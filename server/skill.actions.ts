@@ -1,7 +1,7 @@
 // actions/skill.actions.ts
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 import { Difficulty } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 

@@ -8,42 +8,37 @@ import { ProgressChart } from '../../components/admin/charts/ProgressChart';
 import { SkillDistributionChart } from '../../components/admin/charts/SkillDistributionChart';
 import { UserGrowthChart } from '../../components/admin/charts/UserGrowthChart';
 
-// Mock data
-const statsData = {
-  totalUsers: '1,234',
-  activeSkills: '567',
-  ongoingProjects: '89', 
-  studyHours: '2,450',
-};
+import { getDashboardStats } from '../../server/dashboard.actions';
 
-const recentUsers = [
-  ['John Doe', 'john@example.com', '12 skills', 'Active'],
-  ['Jane Smith', 'jane@example.com', '8 skills', 'Active'],
-  ['Mike Johnson', 'mike@example.com', '15 skills', 'Away'],
-  ['Sarah Wilson', 'sarah@example.com', '6 skills', 'Active'],
-];
+export default async function AdminDashboard() {
+  const dashboardData = await getDashboardStats();
+  
+  // Если нет данных, показываем сообщение об ошибке
+  if (!dashboardData) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Data Unavailable</h1>
+          <p className="text-gray-600">Failed to load dashboard data. Please check your database connection.</p>
+        </div>
+      </div>
+    );
+  }
 
-const popularSkills = [
-  ['React', 'Frontend', '234 learners', 'Advanced'],
-  ['Node.js', 'Backend', '189 learners', 'Intermediate'],
-  ['Python', 'Data Science', '156 learners', 'Beginner'],
-  ['UI/UX Design', 'Design', '142 learners', 'Intermediate'],
-];
-
-export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-6" data-section="dashboard">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome to your admin dashboard</p>
+        <p className="text-gray-600 mt-2">Real-time dashboard data</p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Total Users"
-          value={statsData.totalUsers}
+          value={dashboardData.totalUsers}
           subtitle="Registered users"
           color="blue"
           trend={{ value: 12, isPositive: true }}
@@ -53,7 +48,7 @@ export default function AdminDashboard() {
         
         <StatCard
           title="Active Skills"
-          value={statsData.activeSkills}
+          value={dashboardData.activeSkills}
           subtitle="Being learned"
           color="green"
           trend={{ value: 8, isPositive: true }}
@@ -63,7 +58,7 @@ export default function AdminDashboard() {
         
         <StatCard
           title="Ongoing Projects"
-          value={statsData.ongoingProjects}
+          value={dashboardData.ongoingProjects}
           subtitle="In progress"
           color="purple"
           trend={{ value: 5, isPositive: true }}
@@ -73,7 +68,7 @@ export default function AdminDashboard() {
         
         <StatCard
           title="Study Hours"
-          value={statsData.studyHours}
+          value={dashboardData.studyHours}
           subtitle="This month"
           color="amber"
           trend={{ value: 15, isPositive: true }}
@@ -91,7 +86,7 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Users</h2>
             <Table
               headers={['Name', 'Email', 'Skills', 'Status']}
-              data={recentUsers}
+              data={dashboardData.recentUsers}
               data-testid="recent-users-table"
               striped
               hover
@@ -103,7 +98,7 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Popular Skills</h2>
             <Table
               headers={['Skill', 'Category', 'Learners', 'Level']}
-              data={popularSkills}
+              data={dashboardData.popularSkills}
               data-testid="popular-skills-table"
               striped
               hover
@@ -113,7 +108,7 @@ export default function AdminDashboard() {
           {/* User Growth Chart */}
           <ChartContainer title="User Growth" data-testid="user-growth-chart">
             <div className="h-64">
-              <UserGrowthChart />
+              <UserGrowthChart data={dashboardData.chartData?.userGrowth} />
             </div>
           </ChartContainer>
         </div>
@@ -123,7 +118,7 @@ export default function AdminDashboard() {
           {/* Study Activity Chart */}
           <ChartContainer title="Study Activity" data-testid="activity-chart">
             <div className="h-64">
-              <StudyActivityChart />
+              <StudyActivityChart data={dashboardData.chartData?.studyActivity} />
             </div>
           </ChartContainer>
 
