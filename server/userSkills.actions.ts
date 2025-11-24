@@ -1,7 +1,7 @@
 // actions/user-skill.actions.ts
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 import { SkillLevel } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 

@@ -25,7 +25,7 @@ const menuItems = [
   },
   { 
     name: 'Skills & Learning', 
-    href: '/admin/skills', 
+    href: '/admin/skills_learning', 
     icon: Target 
   },
   { 
