@@ -3,9 +3,11 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { Search, X, Menu, LogIn, UserPlus } from 'lucide-react'
 
 export default function Header() {
     const [isMenuOpen, setIsMenuOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
 
     return (
         <header className="bg-white shadow-sm border-b border-gray-200">
@@ -16,23 +18,22 @@ export default function Header() {
                     <div className="flex items-center space-x-8">
                         {/* Логотип */}
                         <Link href="/" className="flex items-center space-x-2">
-
                             <span className="text-xl font-bold text-gray-900">SkillsTracker</span>
                         </Link>
 
                         {/* Навигация */}
                         <nav className="hidden md:flex items-center space-x-6">
                             <Link href="/about" className="text-gray-700 hover:text-blue-600 font-medium">
-                                About us
+                                О нас
                             </Link>
                             <Link href="/courses" className="text-gray-700 hover:text-blue-600 font-medium">
-                                Courses
+                                Курсы
                             </Link>
                             <Link href="/contact" className="text-gray-700 hover:text-blue-600 font-medium">
-                                Contact us
+                                Контакты
                             </Link>
                             <Link href="/faq" className="text-gray-700 hover:text-blue-600 font-medium">
-                                FAQ's
+                                FAQ
                             </Link>
                         </nav>
                     </div>
@@ -40,25 +41,37 @@ export default function Header() {
                     {/* Правая часть - поиск и кнопки */}
                     <div className="flex items-center space-x-4">
 
-                        {/* Поиск и хлебные крошки */}
-                        <div className="hidden lg:flex items-center space-x-2 text-sm text-gray-600">
-                            <span>Want to learn?</span>
-                            <span className="text-gray-400">|</span>
-                            <div className="flex items-center space-x-1">
-                                <span>Explore</span>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
+                        {/* Встроенный поиск */}
+                        <div className="hidden lg:flex items-center space-x-3 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-full border border-blue-100 hover:border-blue-200 transition-colors min-w-[300px]">
+                            <div className="flex items-center space-x-2 flex-1">
+                                <Search className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Найти курсы, навыки, технологии..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-500 w-full"
+                                />
                             </div>
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
 
                         {/* Кнопки авторизации */}
-                        <div className="flex items-center space-x-3">
-                            <button className="text-gray-700 hover:text-blue-600 font-medium hidden sm:block">
-                                Sign in
+                        <div className="flex gap-3 items-center">
+                            <button className="relative flex items-center gap-2 text-gray-700 hover:text-blue-600 font-medium hidden sm:block pl-6">
+                                <LogIn className="w-4 h-4 flex-shrink-0 absolute left-0 top-1/2 transform -translate-y-1/2" />
+                                <span>Войти</span>
                             </button>
-                            <button className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-4 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-800 transition">
-                                Create free account
+                            <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition">
+                                <UserPlus className="w-4 h-4 flex-shrink-0" />
+                                <span>Создать аккаунт</span>
                             </button>
                         </div>
 
@@ -67,9 +80,7 @@ export default function Header() {
                             className="md:hidden p-2"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                         >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
+                            <Menu className="w-6 h-6" />
                         </button>
                     </div>
                 </div>
@@ -79,23 +90,35 @@ export default function Header() {
                     <div className="md:hidden py-4 border-t border-gray-200">
                         <nav className="flex flex-col space-y-4">
                             <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">
-                                Home
+                                Главная
                             </Link>
                             <Link href="/about" className="text-gray-700 hover:text-blue-600 font-medium">
-                                About us
+                                О нас
                             </Link>
                             <Link href="/courses" className="text-gray-700 hover:text-blue-600 font-medium">
-                                Courses
+                                Курсы
                             </Link>
                             <Link href="/contact" className="text-gray-700 hover:text-blue-600 font-medium">
-                                Contact us
+                                Контакты
                             </Link>
                             <Link href="/faq" className="text-gray-700 hover:text-blue-600 font-medium">
-                                FAQ's
+                                FAQ
                             </Link>
+                            {/* Мобильный поиск */}
+                            <div className="pt-2">
+                                <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-lg">
+                                    <Search className="w-4 h-4 text-blue-500" />
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск..."
+                                        className="bg-transparent border-none outline-none text-sm text-gray-700 w-full"
+                                    />
+                                </div>
+                            </div>
                             <div className="pt-4 border-t border-gray-200">
-                                <button className="text-gray-700 hover:text-blue-600 font-medium w-full text-left">
-                                    Sign in
+                                <button className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 font-medium w-full justify-start">
+                                    <LogIn className="w-4 h-4" />
+                                    <span>Войти</span>
                                 </button>
                             </div>
                         </nav>
