@@ -15,7 +15,7 @@ import {
   Plus
 } from 'lucide-react';
 import { FormModal } from './ui/FormModal';
-import { createSkill, updateSkill } from '../../server/skill.actions';
+import { createSkill, updateSkill } from '../../../../server/skill.actions';
 
 export function SkillModal({ 
   isOpen, 

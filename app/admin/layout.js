@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import "../globals.css";
-import { AdminSidebar } from "../../components/admin/AdminSideBar";
+import { AdminSidebar } from "../../components/admin/layout/AdminSideBar";
 
 export default function AdminLayout({ children }) {
   const [isLoading, setIsLoading] = useState(true);

@@ -1,4 +1,3 @@
-// components/admin/Table.jsx
 export function Table({ 
   headers, 
   data, 
@@ -12,12 +11,12 @@ export function Table({
   if (!data || data.length === 0) {
     return (
       <div 
-        className="bg-white rounded-2xl border border-gray-200 p-8 text-center"
+        className="bg-white rounded-2xl border-2 border-gray-100 p-12 text-center shadow-sm"
         data-testid={testId ? `${testId}-empty` : undefined}
       >
-        {/* Проверяем тип emptyMessage - если строка, используем p, если JSX - рендерим как есть */}
+        <div className="text-gray-300 text-6xl mb-4">📊</div>
         {typeof emptyMessage === 'string' ? (
-          <p className="text-gray-500">{emptyMessage}</p>
+          <p className="text-gray-500 text-lg">{emptyMessage}</p>
         ) : (
           emptyMessage
         )}
@@ -27,43 +26,47 @@ export function Table({
 
   return (
     <div 
-      className={`bg-white rounded-2xl border border-gray-200 overflow-hidden ${className}`}
+      className={`bg-white rounded-2xl border-2 border-gray-100 shadow-sm overflow-hidden ${className}`}
       data-testid={testId}
-      data-variant={striped ? 'striped' : 'normal'}
       {...props}
     >
       <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b-2 border-gray-50">
               {headers.map((header, index) => (
                 <th 
                   key={index}
-                  className="px-6 py-4 text-left text-sm font-medium text-gray-700 bg-gray-50"
+                  className="px-6 py-4 text-left text-sm font-semibold text-gray-700 bg-gray-50/50 uppercase tracking-wide"
                   data-header={header}
                 >
-                  {header}
+                  <div className="flex items-center space-x-1">
+                    <span>{header}</span>
+                  </div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-50">
             {data.map((row, rowIndex) => (
               <tr 
                 key={rowIndex} 
                 className={`
-                  ${striped && rowIndex % 2 === 0 ? 'bg-gray-50' : ''}
-                  ${hover ? 'hover:bg-gray-100 transition-colors' : ''}
+                  ${striped && rowIndex % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}
+                  ${hover ? 'hover:bg-blue-50/50 transition-all duration-200 cursor-pointer' : ''}
+                  group
                 `}
                 data-row={rowIndex}
               >
                 {row.map((cell, cellIndex) => (
                   <td 
                     key={cellIndex} 
-                    className="px-6 py-4 text-sm text-gray-900"
+                    className="px-6 py-4 text-sm text-gray-800 group-hover:text-gray-900"
                     data-cell={`${headers[cellIndex]}-${rowIndex}`}
                   >
-                    {cell}
+                    <div className="flex items-center">
+                      {cell}
+                    </div>
                   </td>
                 ))}
               </tr>

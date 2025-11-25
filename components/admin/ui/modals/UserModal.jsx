@@ -1,10 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { 
-  User, 
-  Mail, 
-  Key, 
-  UserPlus, 
+import {
+  User,
+  Mail,
+  Key,
+  UserPlus,
   Edit3,
   Globe,
   Target,
@@ -12,14 +12,14 @@ import {
   EyeOff,
   FileText
 } from 'lucide-react';
-import { FormModal } from './ui/FormModal';
-import { createUser, updateUser } from '../../server/user.actions';
+import { FormModal } from '../../forms/FormModal';
+import { createUser, updateUser } from '../../../../server/user.actions';
 
-export function UserModal({ 
-  isOpen, 
-  onClose, 
+export function UserModal({
+  isOpen,
+  onClose,
   user = null,
-  onSuccess 
+  onSuccess
 }) {
   const [formData, setFormData] = useState(getInitialFormData(user));
   const [isLoading, setIsLoading] = useState(false);
@@ -55,14 +55,14 @@ export function UserModal({
 
     try {
       let result;
-      
+
       if (user) {
         // Обновление пользователя
         const updateData = { ...formData };
         if (!updateData.password) {
           delete updateData.password;
         }
-        
+
         result = await updateUser(user.id, updateData);
       } else {
         // Создание нового пользователя

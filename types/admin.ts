@@ -1,21 +1,91 @@
-// types/admin.ts
+export interface TableProps {
+  headers: string[];
+  data: React.ReactNode[][];
+  emptyMessage?: string | React.ReactNode;
+  className?: string;
+  striped?: boolean;
+  hover?: boolean;
+  'data-testid'?: string;
+}
+
 export interface StatCardProps {
   title: string;
-  value: string;
+  value: string | number;
   subtitle?: string;
-  icon?: React.ReactNode;
+  icon?: string;
   color?: 'green' | 'blue' | 'amber' | 'purple';
   trend?: {
     value: number;
     isPositive: boolean;
   };
+  className?: string;
+  'data-testid'?: string;
+  'data-admin'?: string;
 }
 
-export interface TableProps {
-  headers: string[];
-  data: (string | number | React.ReactNode)[][];
-  emptyMessage?: string;
+export interface TabsProps {
+  tabs: {
+    id: string;
+    label: string;
+  }[];
+  defaultTab?: string;
+  onTabChange?: (tabId: string) => void;
   className?: string;
+  'data-testid'?: string;
+}
+
+export interface SearchBarProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  className?: string;
+  'data-testid'?: string;
+}
+
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
+export interface FilterSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: FilterOption[];
+  placeholder?: string;
+  className?: string;
+  'data-testid'?: string;
+}
+
+export interface ActionButtonProps {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  'data-testid'?: string;
+}
+
+export interface FilterBarProps {
+  search: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+  };
+  filters?: {
+    key: string;
+    value: string;
+    onChange: (value: string) => void;
+    options: FilterOption[];
+    placeholder?: string;
+  }[];
+  actions?: {
+    label: string;
+    onClick: () => void;
+    variant?: 'primary' | 'secondary' | 'outline';
+    icon?: string;
+  }[];
+  className?: string;
+  'data-testid'?: string;
 }
 
 export interface ChartContainerProps {
@@ -30,7 +100,6 @@ export interface MenuItem {
   icon: string;
 }
 
-// types/dashboard.ts
 export interface DashboardStats {
   totalUsers: string;
   activeSkills: string;
