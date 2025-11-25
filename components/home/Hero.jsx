@@ -3,7 +3,7 @@ import Image from 'next/image'
 
 export default function Hero() {
     return (
-        <section className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-20 px-4">
+        <section className="bg-white text-black py-20 px-4">
             <div className="max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
@@ -13,12 +13,12 @@ export default function Hero() {
                             Раскройте свой потенциал с помощью Skills Tracker
                         </h1>
 
-                        <p className="text-xl md:text-xl text-blue-100 leading-relaxed">
+                        <p className="text-xl md:text-xl text-black leading-relaxed">
                             Добро пожаловать в Skills Tracker, где обучение не знает границ. Мы верим, что образование - это ключ к личному и профессиональному росту, и мы здесь для того, чтобы помочь вам на пути к успеху.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition shadow-lg">
+                            <button className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover: transition shadow-lg">
                                 Начни своё обучение
                             </button>
                         </div>
