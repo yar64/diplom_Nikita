@@ -38,7 +38,7 @@ export async function getDashboardStats() {
             include: {
               skill: true
             },
-            take: 2
+            take: 3
           }
         }
       }),
@@ -94,11 +94,12 @@ export async function getDashboardStats() {
       })
     ]);
 
-    // Форматируем данные для графиков
+    // Форматируем данные для User Growth Chart
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const userGrowth = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - (5 - i));
-      const monthKey = date.toLocaleString('en', { month: 'short' });
+      const monthKey = months[date.getMonth()];
       
       const monthData = userGrowthData.find(item => 
         item.createdAt.getMonth() === date.getMonth() && 
@@ -111,34 +112,41 @@ export async function getDashboardStats() {
       };
     });
 
+    // Форматируем данные для Study Activity Chart
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const studyActivity = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - i));
-      const dayKey = date.toLocaleString('en', { weekday: 'short' });
+      const dayKey = days[date.getDay()];
       
-      const dayData = studyActivityData.find(item => 
-        item.createdAt.toDateString() === date.toDateString()
-      );
+      const dayData = studyActivityData.find(item => {
+        const itemDate = new Date(item.createdAt);
+        return itemDate.toDateString() === date.toDateString();
+      });
+      
+      // Конвертируем минуты в часы с одним decimal
+      const hours = dayData?._sum.duration ? Math.round((dayData._sum.duration / 60) * 10) / 10 : 0;
       
       return {
         date: dayKey,
-        hours: Math.round((dayData?._sum.duration || 0) / 60 * 10) / 10 // Конвертируем минуты в часы
+        hours: hours
       };
     });
 
+    // Форматируем данные для Skill Distribution Chart
     const skillDistribution = skillDistributionData.map(item => ({
-      category: item.category,
+      skill: item.category,
       count: item._count._all
     }));
 
     return {
-      // Основная статистика
-      totalUsers: totalUsers.toLocaleString(),
-      activeSkills: activeSkills.toLocaleString(),
-      ongoingProjects: ongoingProjects.toLocaleString(),
-      studyHours: Math.round((totalStudyTime._sum.duration || 0) / 60).toLocaleString(),
+      // Основная статистика (числа, а не строки)
+      totalUsers: totalUsers,
+      activeSkills: activeSkills,
+      ongoingProjects: ongoingProjects,
+      studyHours: Math.round((totalStudyTime._sum.duration || 0) / 60),
       
-      // Табличные данные (только данные, без JSX)
+      // Табличные данные
       recentUsers: recentUsers.map(user => ({
         id: user.id,
         firstName: user.firstName,

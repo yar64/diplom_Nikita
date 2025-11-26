@@ -30,7 +30,7 @@ const menuItems = [
   },
   { 
     name: 'Projects & Goals', 
-    href: '/admin/projects', 
+    href: '/admin/project_goal', 
     icon: Rocket 
   },
   { 
@@ -40,7 +40,7 @@ const menuItems = [
   },
   { 
     name: 'System', 
-    href: '/admin/system', 
+    href: '/admin/settings', 
     icon: Settings 
   },
 ];

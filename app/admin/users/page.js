@@ -17,9 +17,10 @@ import { Table } from "../../../components/admin/share/Table";
 import { Tabs } from "../../../components/admin/share/Tabs";
 import { StatusBadge } from "../../../components/admin/ui/data-display/StatusBadge";
 import { UserModal } from "../../../components/admin/ui/modals/UserModal";
+import { UserProfileModal } from "../../../components/admin/ui/modals/UserProfileModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
-import ActionButton  from '../../../components/admin/ui/buttons/ActionButton'
-import { getUsers, deleteUser } from "../../../server/user.actions";
+import ActionButton from '../../../components/admin/ui/buttons/ActionButton'
+import { getUsers, deleteUser, getUserProfile } from "../../../server/user.actions";
 
 const tabs = [
   { id: "all", label: "All Users" },
@@ -28,29 +29,64 @@ const tabs = [
   { id: "admins", label: "Admins" },
 ];
 
+const roleColors = {
+  USER: "gray",
+  ADMIN: "red", 
+  MENTOR: "blue"
+};
+
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Загрузка пользователей
   const loadUsers = async () => {
     setLoading(true);
-    const result = await getUsers();
-    if (result.success) {
-      setUsers(result.users);
+    try {
+      const result = await getUsers();
+      if (result.success) {
+        setUsers(result.users || []);
+      } else {
+        console.error("Failed to load users:", result.error);
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadUsers();
   }, []);
+
+  // Функция для просмотра профиля пользователя
+  const handleViewUser = async (userId) => {
+    setProfileLoading(true);
+    try {
+      const result = await getUserProfile(userId);
+      
+      if (result.success) {
+        setViewingUser(result.user);
+        setIsUserProfileModalOpen(true);
+      } else {
+        console.error("Failed to load user profile:", result.error);
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   // Статистика
   const userStats = [
@@ -64,7 +100,7 @@ export default function UsersPage() {
     },
     {
       title: "Active Users",
-      value: users.filter((u) => u.stats?.isActive).length.toString(),
+      value: users.filter((u) => u.stats?.currentStreak > 0).length.toString(),
       subtitle: "Currently active",
       icon: <UserCheck className="w-6 h-6" />,
       color: "green",
@@ -94,7 +130,7 @@ export default function UsersPage() {
     if (activeTab === "students") {
       filteredUsers = users.filter((user) => user.role === "USER");
     } else if (activeTab === "teachers") {
-      filteredUsers = users.filter((user) => user.role === "TEACHER");
+      filteredUsers = users.filter((user) => user.role === "MENTOR");
     } else if (activeTab === "admins") {
       filteredUsers = users.filter((user) => user.role === "ADMIN");
     }
@@ -103,8 +139,8 @@ export default function UsersPage() {
     if (searchTerm) {
       filteredUsers = filteredUsers.filter(
         (user) =>
-          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           `${user.firstName || ""} ${user.lastName || ""}`
             .toLowerCase()
             .includes(searchTerm.toLowerCase())
@@ -131,8 +167,8 @@ export default function UsersPage() {
         ) : (
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
             <span className="text-white text-sm font-medium">
-              {user.firstName?.[0]}
-              {user.lastName?.[0]}
+              {user.firstName?.[0] || user.username?.[0] || 'U'}
+              {user.lastName?.[0] || ''}
             </span>
           </div>
         )}
@@ -140,7 +176,7 @@ export default function UsersPage() {
           <div className="font-medium text-gray-900">
             {user.firstName && user.lastName
               ? `${user.firstName} ${user.lastName}`
-              : user.username}
+              : user.username || user.email}
           </div>
           <div className="text-sm text-gray-500">@{user.username}</div>
         </div>
@@ -157,16 +193,20 @@ export default function UsersPage() {
           </div>
         )}
       </div>,
-      <StatusBadge key={`role-${user.id}`} status={user.role} />,
+      <StatusBadge 
+        key={`role-${user.id}`} 
+        status={user.role} 
+        variant={roleColors[user.role] || 'default'}
+      />,
       <div
         key={`date-${user.id}`}
         className="flex items-center text-sm text-gray-600"
       >
         <Calendar className="w-4 h-4 mr-2" />
-        {new Date(user.createdAt).toLocaleDateString()}
+        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
       </div>,
       <div key={`status-${user.id}`} className="flex items-center">
-        <StatusBadge status={user.stats?.isActive ? "Active" : "Inactive"} />
+        <StatusBadge status={user.stats?.currentStreak > 0 ? "Active" : "Inactive"} />
         <div className="ml-2">
           {user.isPublic ? (
             <Eye className="w-4 h-4 text-green-500" />
@@ -178,6 +218,10 @@ export default function UsersPage() {
       <ActionButton
         key={`actions-${user.id}`}
         actions={[
+          {
+            type: "view",
+            onClick: () => handleViewUser(user.id),
+          },
           {
             type: "edit",
             onClick: () => {
@@ -194,9 +238,8 @@ export default function UsersPage() {
           },
         ]}
         variant="default"
-        showLabels={true}
-        compact={true}
-      />,
+        size="sm"
+      />
     ]);
 
     return { headers, data, filteredUsers };
@@ -209,14 +252,14 @@ export default function UsersPage() {
 
     const result = await deleteUser(userToDelete.id);
     if (result.success) {
-      await loadUsers(); // Перезагружаем список пользователей
+      await loadUsers();
     }
     setIsDeleteModalOpen(false);
     setUserToDelete(null);
   };
 
   const handleUserSuccess = () => {
-    loadUsers(); // Перезагружаем список пользователей
+    loadUsers();
   };
 
   if (loading) {
@@ -253,6 +296,7 @@ export default function UsersPage() {
           size="md"
           showLabels={true}
         >
+          <Plus className="w-4 h-4 mr-2" />
           Add New User
         </ActionButton>
       </div>
@@ -268,8 +312,6 @@ export default function UsersPage() {
             icon={stat.icon}
             color={stat.color}
             trend={stat.trend}
-            data-testid={`stat-card-${index}`}
-            data-admin="true"
           />
         ))}
       </div>
@@ -324,6 +366,7 @@ export default function UsersPage() {
                     size="md"
                     showLabels={true}
                   >
+                    <Plus className="w-4 h-4 mr-2" />
                     Add New User
                   </ActionButton>
                 )}
@@ -392,6 +435,16 @@ export default function UsersPage() {
         onSuccess={handleUserSuccess}
       />
 
+      <UserProfileModal
+        isOpen={isUserProfileModalOpen}
+        onClose={() => {
+          setIsUserProfileModalOpen(false);
+          setViewingUser(null);
+        }}
+        user={viewingUser}
+        loading={profileLoading}
+      />
+
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -403,16 +456,13 @@ export default function UsersPage() {
         message={
           <div className="text-center">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ActionButton
-                type="delete"
-                variant="minimal"
-                size="lg"
-                disabled={true}
-              />
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </div>
             <div className="text-gray-600 mb-2">
               Are you sure you want to delete{" "}
-              <strong>{userToDelete?.username}</strong>?
+              <strong>{userToDelete?.username || userToDelete?.email}</strong>?
             </div>
             <div className="text-sm text-gray-500">
               This action cannot be undone and all user data will be permanently
@@ -422,28 +472,6 @@ export default function UsersPage() {
         }
         confirmLabel="Delete User"
         variant="delete"
-        confirmButton={
-          <ActionButton
-            type="delete"
-            onClick={handleDeleteUser}
-            variant="solid"
-            size="md"
-            showLabels={true}
-          >
-            Delete User
-          </ActionButton>
-        }
-        cancelButton={
-          <ActionButton
-            type="button"
-            onClick={() => setIsDeleteModalOpen(false)}
-            variant="minimal"
-            size="md"
-            showLabels={true}
-          >
-            Cancel
-          </ActionButton>
-        }
       />
     </div>
   );

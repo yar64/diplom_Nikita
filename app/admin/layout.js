@@ -1,4 +1,3 @@
-// app/admin/layout.js
 'use client';
 import { useState, useEffect } from 'react';
 import "../globals.css";

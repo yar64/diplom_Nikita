@@ -1,21 +1,61 @@
-// actions/project.actions.ts
+// actions/project.actions.js
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
-import { ProjectStatus } from '@prisma/client'
+import { prisma } from '../prisma/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-export async function createProject(data: {
-  title: string
-  description?: string
-  repository?: string
-  demoUrl?: string
-  status?: ProjectStatus
-  userId: string
-  startDate?: Date
-  endDate?: Date
-  skillIds?: string[]
-}) {
+export async function getProjects() {
+  try {
+    const projects = await prisma.project.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        skills: {
+          include: {
+            skill: true
+          }
+        },
+        _count: {
+          select: {
+            skills: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    return { success: true, projects }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch projects' }
+  }
+}
+
+export async function getProject(id) {
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        skills: {
+          include: {
+            skill: true
+          }
+        }
+      }
+    })
+    return { success: true, project }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch project' }
+  }
+}
+
+export async function createProject(data) {
   try {
     const project = await prisma.project.create({
       data: {
@@ -29,38 +69,28 @@ export async function createProject(data: {
         endDate: data.endDate,
         skills: data.skillIds ? {
           create: data.skillIds.map(skillId => ({
-            skillId: skillId,
-          })),
-        } : undefined,
+            skill: { connect: { id: skillId } }
+          }))
+        } : undefined
       },
       include: {
+        user: true,
         skills: {
           include: {
-            skill: true,
-          },
-        },
-      },
+            skill: true
+          }
+        }
+      }
     })
-    revalidatePath('/projects')
-    revalidatePath(`/users/${data.userId}/projects`)
+    revalidatePath('/admin/projects')
     return { success: true, project }
   } catch (error) {
     return { success: false, error: 'Failed to create project' }
   }
 }
 
-export async function updateProject(id: string, data: {
-  title?: string
-  description?: string
-  repository?: string
-  demoUrl?: string
-  status?: ProjectStatus
-  startDate?: Date
-  endDate?: Date
-  skillIds?: string[]
-}) {
+export async function updateProject(id, data) {
   try {
-    // Сначала обновляем основные данные проекта
     const project = await prisma.project.update({
       where: { id },
       data: {
@@ -72,25 +102,16 @@ export async function updateProject(id: string, data: {
         startDate: data.startDate,
         endDate: data.endDate,
       },
+      include: {
+        user: true,
+        skills: {
+          include: {
+            skill: true
+          }
+        }
+      }
     })
-
-    // Если переданы skillIds, обновляем связи
-    if (data.skillIds) {
-      // Удаляем существующие связи
-      await prisma.projectSkill.deleteMany({
-        where: { projectId: id },
-      })
-
-      // Создаем новые связи
-      await prisma.projectSkill.createMany({
-        data: data.skillIds.map(skillId => ({
-          projectId: id,
-          skillId: skillId,
-        })),
-      })
-    }
-
-    revalidatePath('/projects')
+    revalidatePath('/admin/projects')
     revalidatePath(`/projects/${id}`)
     return { success: true, project }
   } catch (error) {
@@ -98,33 +119,51 @@ export async function updateProject(id: string, data: {
   }
 }
 
-export async function deleteProject(id: string) {
+export async function deleteProject(id) {
   try {
-    const project = await prisma.project.delete({
+    await prisma.project.delete({
       where: { id },
     })
-    revalidatePath('/projects')
-    revalidatePath(`/users/${project.userId}/projects`)
+    revalidatePath('/admin/projects')
     return { success: true }
   } catch (error) {
     return { success: false, error: 'Failed to delete project' }
   }
 }
 
-export async function getUserProjects(userId: string) {
+export async function addSkillToProject(projectId, skillId) {
   try {
-    const projects = await prisma.project.findMany({
-      where: { userId },
-      include: {
-        skills: {
-          include: {
-            skill: true,
-          },
-        },
+    const projectSkill = await prisma.projectSkill.create({
+      data: {
+        projectId,
+        skillId,
       },
+      include: {
+        skill: true
+      }
     })
-    return { success: true, projects }
+    revalidatePath('/admin/projects')
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true, projectSkill }
   } catch (error) {
-    return { success: false, error: 'Failed to fetch user projects' }
+    return { success: false, error: 'Failed to add skill to project' }
+  }
+}
+
+export async function removeSkillFromProject(projectId, skillId) {
+  try {
+    await prisma.projectSkill.delete({
+      where: {
+        projectId_skillId: {
+          projectId,
+          skillId
+        }
+      }
+    })
+    revalidatePath('/admin/projects')
+    revalidatePath(`/projects/${projectId}`)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: 'Failed to remove skill from project' }
   }
 }

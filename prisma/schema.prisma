@@ -35,6 +35,17 @@ model User {
   notifications        Notification[]
   communityMemberships CommunityMember[]
   communityPosts       CommunityPost[]
+  
+  // Новые связи для настроек
+  settings             UserSettings?
+  notificationSettings UserNotificationSettings?
+  privacySettings      UserPrivacySettings?
+  appearanceSettings   UserAppearanceSettings?
+  learningPreferences  UserLearningPreferences?
+  securitySettings     UserSecuritySettings?
+  
+  // Новая связь для аудита
+  auditLogs            AuditLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -316,7 +327,225 @@ model CommunityPost {
   @@map("community_posts")
 }
 
-// Enums
+// Новые модели для настроек
+model UserSettings {
+  id                    String          @id @default(cuid())
+  userId                String          @unique
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Основные настройки
+  email                 String?
+  phone                 String?
+  location              String?
+  website               String?
+  company               String?
+  occupation            String?
+  
+  // Настройки уведомлений
+  emailNotifications    Boolean         @default(true)
+  pushNotifications     Boolean         @default(true)
+  goalReminders         Boolean         @default(true)
+  weeklyReports         Boolean         @default(true)
+  mentorNotifications   Boolean         @default(true)
+  communityUpdates      Boolean         @default(true)
+  
+  // Настройки обучения
+  defaultDifficulty     Difficulty      @default(BEGINNER)
+  preferredResourceType ResourceType    @default(VIDEO)
+  autoGenerateGoals     Boolean         @default(false)
+  studyReminders        Boolean         @default(true)
+  reminderTime          String?         @default("20:00")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model UserNotificationSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Частоты уведомлений
+  emailFrequency    Frequency @default(DAILY)
+  digestFrequency   Frequency @default(WEEKLY)
+  
+  // Типы уведомлений
+  notifyNewMessages Boolean @default(true)
+  notifyGoalDue     Boolean @default(true)
+  notifyMentions    Boolean @default(true)
+  notifySkillSuggestions Boolean @default(true)
+  notifyCommunityActivity Boolean @default(false)
+  notifyStudyReminders Boolean @default(true)
+  notifyProgressUpdates Boolean @default(true)
+  
+  // Время отправки
+  quietHoursStart   String? @default("22:00")
+  quietHoursEnd     String? @default("08:00")
+  preferredSendTime String? @default("18:00")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_notification_settings")
+}
+
+model UserPrivacySettings {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Видимость профиля
+  profileVisibility     ProfileVisibility @default(PUBLIC)
+  showEmail             Boolean           @default(false)
+  showRealName          Boolean           @default(false)
+  showLocation          Boolean           @default(false)
+  showOccupation        Boolean           @default(false)
+  
+  // Видимость активности
+  showStudySessions     Boolean           @default(true)
+  showCurrentProjects   Boolean           @default(true)
+  showSkillLevels       Boolean           @default(true)
+  showLearningPaths     Boolean           @default(true)
+  showAchievements      Boolean           @default(true)
+  showGoals             Boolean           @default(true)
+  showStats             Boolean           @default(true)
+  
+  // Контроль данных
+  dataSharing           Boolean           @default(false)
+  analyticsTracking     Boolean           @default(true)
+  personalizedAds       Boolean           @default(false)
+  marketingEmails       Boolean           @default(false)
+  
+  // Блокировки (используем JSON для SQLite)
+  blockedUsers          Json?             // Array of user IDs as JSON
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_privacy_settings")
+}
+
+model UserAppearanceSettings {
+  id             String @id @default(cuid())
+  userId         String @unique
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  theme          Theme  @default(LIGHT)
+  accentColor    String @default("blue")
+  fontSize       FontSize @default(MEDIUM)
+  reducedMotion  Boolean @default(false)
+  highContrast   Boolean @default(false)
+  sidebarCollapsed Boolean @default(false)
+  showAvatars    Boolean @default(true)
+  compactView    Boolean @default(false)
+  denseTables    Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_appearance_settings")
+}
+
+model UserLearningPreferences {
+  id                      String            @id @default(cuid())
+  userId                  String            @unique
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Предпочтения обучения
+  learningStyle           LearningStyle     @default(VISUAL)
+  preferredDifficulty     Difficulty        @default(BEGINNER)
+  dailyStudyGoal          Int               @default(60)
+  weeklyStudyGoal         Int               @default(300)
+  maxSessionDuration      Int               @default(120)
+  
+  // Предпочтения контента (используем JSON для SQLite)
+  preferredResourceTypes  Json?             // Array of ResourceType as JSON
+  videoPlaybackSpeed      Float             @default(1.0)
+  autoPlayVideos          Boolean           @default(true)
+  showTranscripts         Boolean           @default(true)
+  enableSubtitles         Boolean           @default(false)
+  
+  // Настройки сессий
+  sessionReminders        Boolean           @default(true)
+  breakReminders          Boolean           @default(true)
+  sessionLength           Int               @default(25)
+  breakLength             Int               @default(5)
+  longBreakLength         Int               @default(15)
+  sessionsBeforeLongBreak Int               @default(4)
+  
+  // Цели и прогресс
+  autoGoalAdjustment      Boolean           @default(true)
+  showProgressCharts      Boolean           @default(true)
+  celebrateMilestones     Boolean           @default(true)
+  shareAchievements       Boolean           @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_learning_preferences")
+}
+
+model UserSecuritySettings {
+  id                    String    @id @default(cuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Безопасность аккаунта
+  twoFactorEnabled      Boolean   @default(false)
+  twoFactorSecret       String?
+  backupCodes           Json?     // Array of backup codes as JSON
+  lastPasswordChange    DateTime?
+  loginAlerts           Boolean   @default(true)
+  
+  // Сессии
+  currentSessions       Json?     // Active sessions data
+  trustedDevices        Json?     // Array of device IDs as JSON
+  
+  // Конфиденциальность
+  dataExportEnabled     Boolean   @default(true)
+  accountDeletionDate   DateTime? // Scheduled deletion date
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_security_settings")
+}
+
+model SystemSettings {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  value       String
+  description String?
+  category    SettingCategory
+  isPublic    Boolean          @default(false)
+  dataType    SettingDataType  @default(STRING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model AuditLog {
+  id          String        @id @default(cuid())
+  action      String
+  resource    String?
+  resourceId  String?
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// Существующие енумы
 enum UserRole {
   USER
   ADMIN
@@ -362,6 +591,8 @@ enum ResourceType {
   BOOK
   TUTORIAL
   EXERCISE
+  PODCAST
+  CHEATSHEET
 }
 
 enum NotificationType {
@@ -373,10 +604,67 @@ enum NotificationType {
   MENTOR_FEEDBACK
   GOAL_COMPLETED
   STREAK_REMINDER
+  NEW_MESSAGE
+  SYSTEM_ALERT
 }
 
 enum CommunityRole {
   MEMBER
   MODERATOR
   ADMIN
+}
+
+// Новые енумы для настроек
+enum ProfileVisibility {
+  PUBLIC
+  PRIVATE
+  FRIENDS_ONLY
+  SKILL_SPECIFIC
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  AUTO
+}
+
+enum FontSize {
+  SMALL
+  MEDIUM
+  LARGE
+  XLARGE
+}
+
+enum Frequency {
+  NEVER
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum LearningStyle {
+  VISUAL
+  AUDITORY
+  READING
+  KINESTHETIC
+  MIXED
+}
+
+enum SettingCategory {
+  GENERAL
+  SECURITY
+  NOTIFICATIONS
+  APPEARANCE
+  LEARNING
+  PRIVACY
+  SYSTEM
+  COMMUNITY
+}
+
+enum SettingDataType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  ARRAY
 }

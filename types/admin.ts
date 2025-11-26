@@ -120,3 +120,47 @@ export interface PopularSkill {
   learners: string;
   level: string;
 }
+
+interface Skill {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  icon: string | null;
+  difficulty: string;
+  _count: {
+    userSkills: number;
+    learningResources: number;
+  };
+}
+
+interface LearningPath {
+  id: string;
+  title: string;
+  description: string | null;
+  isPublic: boolean;
+  userId: string;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  milestones: any[];
+}
+
+interface StudySession {
+  id: string;
+  duration: number;
+  description: string | null;
+  date: Date;
+  sessionType: string;
+  efficiency: number | null;
+  userId: string;
+  userSkillId: string;
+  userSkill: {
+    skill: {
+      name: string;
+    };
+  };
+}

@@ -1,4 +1,4 @@
-// components/admin/ui/buttons/ActionButtons.jsx
+// components/admin/ui/buttons/ActionButton.jsx
 "use client";
 import { 
   Edit3, 
@@ -19,7 +19,7 @@ import {
   Lock,
   Unlock
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Иконки по типам действий
 const actionIcons = {
@@ -81,83 +81,6 @@ const actionColors = {
   unlock: "green"
 };
 
-// Компонент одиночной кнопки
-const SingleActionButton = ({ 
-  type,
-  label,
-  icon: IconComponent,
-  color,
-  variant,
-  size,
-  showLabels,
-  onClick,
-  disabled,
-  className = ""
-}) => {
-  const baseClasses = "flex items-center transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 rounded";
-  const sizeClasses = {
-    sm: "text-sm",
-    md: "text-base",
-    lg: "text-lg"
-  };
-
-  const iconSize = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5", 
-    lg: "w-6 h-6"
-  };
-
-  const variantClasses = {
-    default: {
-      blue: "text-blue-600 hover:text-blue-800 focus:ring-blue-500",
-      gray: "text-gray-600 hover:text-gray-800 focus:ring-gray-500",
-      red: "text-red-600 hover:text-red-800 focus:ring-red-500",
-      purple: "text-purple-600 hover:text-purple-800 focus:ring-purple-500",
-      green: "text-green-600 hover:text-green-800 focus:ring-green-500",
-      indigo: "text-indigo-600 hover:text-indigo-800 focus:ring-indigo-500",
-      orange: "text-orange-600 hover:text-orange-800 focus:ring-orange-500"
-    },
-    minimal: {
-      blue: "text-gray-400 hover:text-blue-600 focus:ring-blue-500",
-      gray: "text-gray-400 hover:text-gray-600 focus:ring-gray-500",
-      red: "text-gray-400 hover:text-red-600 focus:ring-red-500",
-      purple: "text-gray-400 hover:text-purple-600 focus:ring-purple-500",
-      green: "text-gray-400 hover:text-green-600 focus:ring-green-500",
-      indigo: "text-gray-400 hover:text-indigo-600 focus:ring-indigo-500",
-      orange: "text-gray-400 hover:text-orange-600 focus:ring-orange-500"
-    },
-    solid: {
-      blue: "bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500 px-3 py-1",
-      gray: "bg-gray-500 hover:bg-gray-600 text-white focus:ring-gray-500 px-3 py-1",
-      red: "bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 px-3 py-1",
-      purple: "bg-purple-500 hover:bg-purple-600 text-white focus:ring-purple-500 px-3 py-1",
-      green: "bg-green-500 hover:bg-green-600 text-white focus:ring-green-500 px-3 py-1",
-      indigo: "bg-indigo-500 hover:bg-indigo-600 text-white focus:ring-indigo-500 px-3 py-1",
-      orange: "bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-500 px-3 py-1"
-    }
-  };
-
-  const disabledClasses = "opacity-50 cursor-not-allowed";
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        ${baseClasses}
-        ${sizeClasses[size]}
-        ${variantClasses[variant]?.[color] || variantClasses[variant]?.gray}
-        ${disabled ? disabledClasses : ''}
-        ${className}
-      `}
-      title={label}
-    >
-      {IconComponent && <IconComponent className={`${iconSize[size]} ${showLabels ? 'mr-1' : ''}`} />}
-      {showLabels && label}
-    </button>
-  );
-};
-
 // Компонент dropdown для компактного режима
 const DropdownActions = ({ actions, variant, size, isOpen, onToggle }) => {
   const iconSize = {
@@ -166,34 +89,61 @@ const DropdownActions = ({ actions, variant, size, isOpen, onToggle }) => {
     lg: "w-6 h-6"
   };
 
+  const dropdownRef = useRef(null);
+
+  // Обработчик клика вне dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        onToggle();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen, onToggle]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={onToggle}
-        className="flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 rounded"
+        className="flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 rounded p-1"
       >
         <MoreVertical className={iconSize[size]} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-32 py-1">
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-32 py-1"> {/* Увеличил z-index до 50 и shadow-xl */}
           {actions.map((action, index) => {
             const IconComponent = actionIcons[action.type];
             const label = action.label || actionLabels[action.type];
-            const color = action.color || actionColors[action.type];
+            const color = actionColors[action.type];
 
             const variantClasses = {
               default: {
                 blue: "text-blue-600 hover:bg-blue-50",
                 gray: "text-gray-600 hover:bg-gray-50",
                 red: "text-red-600 hover:bg-red-50",
-                purple: "text-purple-600 hover:bg-purple-50"
+                purple: "text-purple-600 hover:bg-purple-50",
+                green: "text-green-600 hover:bg-green-50",
+                indigo: "text-indigo-600 hover:bg-indigo-50",
+                orange: "text-orange-600 hover:bg-orange-50"
               },
               minimal: {
                 blue: "text-gray-600 hover:bg-blue-50 hover:text-blue-600",
                 gray: "text-gray-600 hover:bg-gray-50",
                 red: "text-gray-600 hover:bg-red-50 hover:text-red-600",
-                purple: "text-gray-600 hover:bg-purple-50 hover:text-purple-600"
+                purple: "text-gray-600 hover:bg-purple-50 hover:text-purple-600",
+                green: "text-gray-600 hover:bg-green-50 hover:text-green-600",
+                indigo: "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600",
+                orange: "text-gray-600 hover:bg-orange-50 hover:text-orange-600"
               }
             };
 
@@ -219,7 +169,7 @@ const DropdownActions = ({ actions, variant, size, isOpen, onToggle }) => {
   );
 };
 
-// Основной компонент ActionButtons
+// Основной компонент ActionButton
 const ActionButton = ({ 
   // Поддержка legacy пропсов для обратной совместимости
   onEdit, 
@@ -234,12 +184,12 @@ const ActionButton = ({
   variant = "default",
   size = "sm",
   showLabels = false,
-  compact = false,
-  direction = "horizontal", // horizontal | vertical
+  compact = true,
+  direction = "horizontal",
   className = "",
 
   // Для использования как обычная кнопка
-  type, // если указан type, то компонент работает как одиночная кнопка
+  type,
   children,
   onClick,
   disabled = false
@@ -253,18 +203,26 @@ const ActionButton = ({
     const color = actionColors[type] || "gray";
 
     return (
-      <SingleActionButton
-        type={type}
-        label={label}
-        icon={IconComponent}
-        color={color}
-        variant={variant}
-        size={size}
-        showLabels={showLabels}
+      <button
         onClick={onClick}
         disabled={disabled}
-        className={className}
-      />
+        className={`
+          flex items-center transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 rounded
+          ${size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg'}
+          ${variant === 'solid' ? 
+            `bg-${color}-500 hover:bg-${color}-600 text-white focus:ring-${color}-500 px-3 py-1` :
+            variant === 'minimal' ?
+            `text-gray-400 hover:text-${color}-600 focus:ring-${color}-500` :
+            `text-${color}-600 hover:text-${color}-800 focus:ring-${color}-500`
+          }
+          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+          ${className}
+        `}
+        title={label}
+      >
+        {IconComponent && <IconComponent className={`${size === 'sm' ? 'w-4 h-4' : size === 'md' ? 'w-5 h-5' : 'w-6 h-6'} ${showLabels ? 'mr-1' : ''}`} />}
+        {showLabels && label}
+      </button>
     );
   }
 
@@ -279,56 +237,15 @@ const ActionButton = ({
 
   if (allActions.length === 0) return null;
 
-  // Компактный режим с dropdown
-  if (compact && allActions.length > 2) {
-    const mainActions = allActions.slice(0, 2);
-    const dropdownActions = allActions.slice(2);
-
-    return (
-      <div className={`flex items-center space-x-1 ${className}`}>
-        {mainActions.map((action, index) => (
-          <SingleActionButton
-            key={index}
-            type={action.type}
-            label={action.label || actionLabels[action.type]}
-            icon={actionIcons[action.type]}
-            color={action.color || actionColors[action.type]}
-            variant={variant}
-            size={size}
-            showLabels={showLabels}
-            onClick={action.onClick}
-            disabled={action.disabled}
-          />
-        ))}
-
-        <DropdownActions
-          actions={dropdownActions}
-          variant={variant}
-          size={size}
-          isOpen={isDropdownOpen}
-          onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
-        />
-      </div>
-    );
-  }
-
-  // Обычный режим
   return (
-    <div className={`flex ${direction === 'vertical' ? 'flex-col space-y-1' : 'items-center space-x-2'} ${className}`}>
-      {allActions.map((action, index) => (
-        <SingleActionButton
-          key={index}
-          type={action.type}
-          label={action.label || actionLabels[action.type]}
-          icon={actionIcons[action.type]}
-          color={action.color || actionColors[action.type]}
-          variant={variant}
-          size={size}
-          showLabels={showLabels}
-          onClick={action.onClick}
-          disabled={action.disabled}
-        />
-      ))}
+    <div className={`relative ${className}`}> {/* Добавил relative здесь тоже */}
+      <DropdownActions
+        actions={allActions}
+        variant={variant}
+        size={size}
+        isOpen={isDropdownOpen}
+        onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
+      />
     </div>
   );
 };

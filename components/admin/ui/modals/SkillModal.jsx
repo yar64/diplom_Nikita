@@ -14,7 +14,7 @@ import {
   Edit3,
   Plus
 } from 'lucide-react';
-import { FormModal } from './ui/FormModal';
+import { FormModal } from '../../forms/FormModal';
 import { createSkill, updateSkill } from '../../../../server/skill.actions';
 
 export function SkillModal({ 

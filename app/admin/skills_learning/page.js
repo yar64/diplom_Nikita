@@ -1,214 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BookOpen, 
   Users, 
   Clock, 
   FileText, 
   Search, 
-  Plus,
-  Edit3,
-  Eye,
-  BarChart3
+  Plus
 } from "lucide-react";
 import { Table } from "../../../components/admin/share/Table";
 import { StatCard } from "../../../components/admin/ui/data-display/StatCard";
 import { Tabs } from "../../../components/admin/share/Tabs";
-import { FilterBar } from "../../../components/admin/forms/FilterBar";
 import { StatusBadge } from "../../../components/admin/ui/data-display/StatusBadge";
-
-// Mock data
-const mockSkills = [
-  [
-    <div key="name" className="flex items-center space-x-3">
-      <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
-        <span className="text-white text-sm font-bold">JS</span>
-      </div>
-      <div>
-        <div className="font-semibold text-gray-900">JavaScript</div>
-        <div className="text-sm text-gray-500">Frontend Development</div>
-      </div>
-    </div>,
-    <div key="category" className="text-gray-700">
-      Frontend
-    </div>,
-    <StatusBadge key="diff" status="Intermediate" variant="warning" />,
-    <div key="users" className="flex items-center space-x-3">
-      <div className="flex -space-x-2">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white"></div>
-        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-2 border-white"></div>
-        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white flex items-center justify-center">
-          <span className="text-white text-xs">+86</span>
-        </div>
-      </div>
-      <span className="text-gray-700 font-medium">89</span>
-    </div>,
-    <div key="resources" className="text-center">
-      <span className="text-blue-600 font-semibold">23</span>
-    </div>,
-    <div key="actions" className="flex items-center space-x-2">
-      <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-        <Edit3 className="w-4 h-4 mr-1" />
-        Edit
-      </button>
-      <button className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors">
-        <Eye className="w-4 h-4 mr-1" />
-        View
-      </button>
-      <button className="flex items-center text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors">
-        <BarChart3 className="w-4 h-4 mr-1" />
-        Stats
-      </button>
-    </div>,
-  ],
-  [
-    <div key="name" className="flex items-center space-x-3">
-      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center">
-        <span className="text-white text-sm font-bold">PY</span>
-      </div>
-      <div>
-        <div className="font-semibold text-gray-900">Python</div>
-        <div className="text-sm text-gray-500">Backend Development</div>
-      </div>
-    </div>,
-    <div key="category" className="text-gray-700">
-      Backend
-    </div>,
-    <StatusBadge key="diff" status="Beginner" variant="success" />,
-    <div key="users" className="flex items-center space-x-3">
-      <div className="flex -space-x-2">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white"></div>
-        <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full border-2 border-white"></div>
-        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white flex items-center justify-center">
-          <span className="text-white text-xs">+73</span>
-        </div>
-      </div>
-      <span className="text-gray-700 font-medium">76</span>
-    </div>,
-    <div key="resources" className="text-center">
-      <span className="text-blue-600 font-semibold">18</span>
-    </div>,
-    <div key="actions" className="flex items-center space-x-2">
-      <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-        <Edit3 className="w-4 h-4 mr-1" />
-        Edit
-      </button>
-      <button className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors">
-        <Eye className="w-4 h-4 mr-1" />
-        View
-      </button>
-      <button className="flex items-center text-purple-600 hover:text-purple-800 text-sm font-medium transition-colors">
-        <BarChart3 className="w-4 h-4 mr-1" />
-        Stats
-      </button>
-    </div>,
-  ],
-];
-
-const mockLearningPaths = [
-  [
-    <div key="title" className="flex items-center space-x-3">
-      <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
-        <span className="text-white text-sm">🚀</span>
-      </div>
-      <div>
-        <div className="font-semibold text-gray-900">Full Stack Developer</div>
-        <div className="text-sm text-gray-500">@alex_ivanov</div>
-      </div>
-    </div>,
-    <div key="skills" className="flex items-center space-x-2">
-      <div className="flex space-x-1">
-        {["🟢", "🟢", "🟢", "🟢", "⚪"].map((dot, i) => (
-          <span key={i}>{dot}</span>
-        ))}
-      </div>
-      <span className="text-sm text-gray-600">5 skills</span>
-    </div>,
-    <div key="participants" className="text-center">
-      <span className="text-gray-700 font-medium">24</span>
-    </div>,
-    <div key="progress" className="flex items-center space-x-3">
-      <div className="w-20 bg-gray-200 rounded-full h-2">
-        <div
-          className="bg-green-500 h-2 rounded-full"
-          style={{ width: "70%" }}
-        />
-      </div>
-      <span className="text-sm font-medium text-gray-600">70%</span>
-    </div>,
-    <div key="actions" className="flex items-center space-x-2">
-      <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-        <Edit3 className="w-4 h-4 mr-1" />
-        Edit
-      </button>
-      <button className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors">
-        <Eye className="w-4 h-4 mr-1" />
-        View
-      </button>
-    </div>,
-  ],
-];
-
-const mockStudySessions = [
-  [
-    <div key="user" className="flex items-center space-x-2">
-      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full"></div>
-      <span className="font-medium text-gray-900">@alex_ivanov</span>
-    </div>,
-    <span key="skill" className="text-gray-700">JavaScript</span>,
-    <div key="duration" className="flex items-center space-x-2 text-green-600 font-medium">
-      <Clock className="w-4 h-4" />
-      <span>2h 30m</span>
-    </div>,
-    <StatusBadge key="type" status="Theory" variant="info" />,
-    <div key="efficiency" className="flex items-center space-x-2">
-      <div className="flex">
-        {[1, 2, 3, 4].map((star) => (
-          <span key={star} className="text-amber-400">⭐</span>
-        ))}
-        <span className="text-gray-300">⭐</span>
-      </div>
-      <span className="text-sm font-medium text-gray-600">80%</span>
-    </div>,
-    <span key="date" className="text-gray-600">15 Dec, 10:30</span>,
-  ],
-];
-
-const mockResources = [
-  [
-    <div key="title" className="flex items-center space-x-3">
-      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
-        <span className="text-white text-sm">📚</span>
-      </div>
-      <div>
-        <div className="font-semibold text-gray-900">React Official Docs</div>
-        <div className="text-sm text-gray-500">Documentation</div>
-      </div>
-    </div>,
-    <StatusBadge key="type" status="Docs" variant="info" />,
-    <span key="skill" className="text-gray-700">React</span>,
-    <StatusBadge key="diff" status="Intermediate" variant="warning" />,
-    <div key="rating" className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span key={star} className="text-amber-400">⭐</span>
-      ))}
-    </div>,
-    <div key="views" className="text-center">
-      <span className="text-gray-700 font-medium">1.2K</span>
-    </div>,
-    <div key="actions" className="flex items-center space-x-2">
-      <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors">
-        <Edit3 className="w-4 h-4 mr-1" />
-        Edit
-      </button>
-      <button className="flex items-center text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors">
-        <Eye className="w-4 h-4 mr-1" />
-        View
-      </button>
-    </div>,
-  ],
-];
+import ActionButton from "../../../components/admin/ui/buttons/ActionButton";
+import { getSkills, deleteSkill } from "../../../server/skill.actions";
+import { getLearningPaths, deleteLearningPath } from "../../../server/learning-path.actions";
+import { getUserSessions } from "../../../server/studySession.actions";
+import { SkillModal } from "../../../components/admin/ui/modals/SkillModal";
+import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 
 const tabs = [
   { id: "skills", label: "Skills Management" },
@@ -222,28 +32,34 @@ const categoryOptions = [
   { value: "", label: "Все категории" },
   { value: "frontend", label: "Frontend" },
   { value: "backend", label: "Backend" },
+  { value: "mobile", label: "Mobile" },
+  { value: "devops", label: "DevOps" },
+  { value: "database", label: "Database" },
 ];
 
 const sortOptions = [
   { value: "popularity", label: "Популярность" },
   { value: "name", label: "Название" },
+  { value: "difficulty", label: "Сложность" },
 ];
 
 const periodOptions = [
   { value: "7days", label: "7 дней" },
   { value: "30days", label: "30 дней" },
+  { value: "all", label: "Все время" },
 ];
 
 const typeOptions = [
   { value: "", label: "Все типы" },
-  { value: "theory", label: "Theory" },
-  { value: "practice", label: "Practice" },
+  { value: "THEORY", label: "Theory" },
+  { value: "PRACTICE", label: "Practice" },
 ];
 
 const difficultyOptions = [
   { value: "", label: "Все сложности" },
-  { value: "beginner", label: "Beginner" },
-  { value: "intermediate", label: "Intermediate" },
+  { value: "BEGINNER", label: "Beginner" },
+  { value: "INTERMEDIATE", label: "Intermediate" },
+  { value: "ADVANCED", label: "Advanced" },
 ];
 
 export default function SkillsLearningPage() {
@@ -254,15 +70,377 @@ export default function SkillsLearningPage() {
   const [period, setPeriod] = useState("7days");
   const [sessionType, setSessionType] = useState("");
   const [difficulty, setDifficulty] = useState("");
+  
+  // Состояния для реальных данных
+  const [skills, setSkills] = useState([]);
+  const [learningPaths, setLearningPaths] = useState([]);
+  const [studySessions, setStudySessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSkills: 0,
+    activeLearners: 0,
+    studyHours: 0,
+    resources: 0
+  });
+
+  // Состояния для модальных окон
+  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState(null);
+  const [deletingSkill, setDeletingSkill] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Загрузка данных
+  useEffect(() => {
+    loadData();
+  }, [activeTab]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      switch (activeTab) {
+        case "skills":
+          const skillsResult = await getSkills();
+          if (skillsResult.success) {
+            setSkills(skillsResult.skills || []);
+          } else {
+            console.error("Failed to load skills:", skillsResult.error);
+          }
+          break;
+        case "paths":
+          const pathsResult = await getLearningPaths();
+          if (pathsResult.success) {
+            setLearningPaths(pathsResult.learningPaths || []);
+          } else {
+            console.error("Failed to load learning paths:", pathsResult.error);
+          }
+          break;
+        case "sessions":
+          // Здесь нужно передать конкретный userId, пока используем mock
+          const sessionsResult = await getUserSessions("user-id");
+          if (sessionsResult.success) {
+            setStudySessions(sessionsResult.sessions || []);
+          } else {
+            console.error("Failed to load study sessions:", sessionsResult.error);
+          }
+          break;
+      }
+      
+      // Загрузка статистики
+      await loadStats();
+    } catch (error) {
+      console.error("Error loading data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    // Вычисляем статистику на основе загруженных данных
+    const totalSkills = skills.length;
+    
+    // Считаем общее количество пользователей, изучающих навыки
+    const activeLearners = skills.reduce((acc, skill) => 
+      acc + (skill.userSkills?.length || 0), 0
+    );
+    
+    // Считаем общее количество часов обучения
+    const studyHours = Math.round(
+      studySessions.reduce((acc, session) => acc + (session.duration || 0), 0) / 60
+    );
+    
+    // Считаем общее количество ресурсов
+    const resources = skills.reduce((acc, skill) => 
+      acc + (skill.learningResources?.length || 0), 0
+    );
+    
+    setStats({
+      totalSkills,
+      activeLearners,
+      studyHours,
+      resources
+    });
+  };
+
+  // Функции для работы с модальными окнами навыков
+  const handleAddSkill = () => {
+    setEditingSkill(null);
+    setIsSkillModalOpen(true);
+  };
+
+  const handleEditSkill = (skill) => {
+    setEditingSkill(skill);
+    setIsSkillModalOpen(true);
+  };
+
+  const handleCloseSkillModal = () => {
+    setIsSkillModalOpen(false);
+    setEditingSkill(null);
+  };
+
+  const handleSkillSuccess = () => {
+    loadData(); // Перезагружаем данные после успешного создания/обновления
+  };
+
+  // Функции для удаления навыков
+  const handleDeleteClick = (skill) => {
+    setDeletingSkill(skill);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setDeletingSkill(null);
+    setIsDeleting(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingSkill) return;
+    
+    setIsDeleting(true);
+    try {
+      const result = await deleteSkill(deletingSkill.id);
+      if (result.success) {
+        setSkills(skills.filter(skill => skill.id !== deletingSkill.id));
+        handleCloseDeleteModal();
+      } else {
+        alert(result.error);
+        handleCloseDeleteModal();
+      }
+    } catch (error) {
+      alert("Ошибка при удалении навыка");
+      handleCloseDeleteModal();
+    }
+  };
+
+  // Функции для работы с путями обучения
+  const handleDeleteLearningPath = async (pathId, pathTitle) => {
+    if (window.confirm(`Вы уверены, что хотите удалить путь обучения "${pathTitle}"?`)) {
+      try {
+        const result = await deleteLearningPath(pathId);
+        if (result.success) {
+          setLearningPaths(learningPaths.filter(path => path.id !== pathId));
+        } else {
+          alert(result.error);
+        }
+      } catch (error) {
+        alert("Ошибка при удалении пути обучения");
+      }
+    }
+  };
+
+  // Функция для отображения аватаров пользователей
+  const renderUserAvatars = (userSkills, totalUsers) => {
+    if (!userSkills || userSkills.length === 0) {
+      return (
+        <div className="flex items-center space-x-3">
+          <div className="flex -space-x-2">
+            <div className="w-8 h-8 bg-gray-300 rounded-full border-2 border-white"></div>
+            <div className="w-8 h-8 bg-gray-400 rounded-full border-2 border-white"></div>
+            <div className="w-8 h-8 bg-gray-500 rounded-full border-2 border-white flex items-center justify-center">
+              <span className="text-white text-xs">+0</span>
+            </div>
+          </div>
+          <span className="text-gray-700 font-medium">0</span>
+        </div>
+      );
+    }
+
+    const visibleUsers = userSkills.slice(0, 3);
+    const remainingUsers = Math.max(0, totalUsers - 3);
+
+    return (
+      <div className="flex items-center space-x-3">
+        <div className="flex -space-x-2">
+          {visibleUsers.map((userSkill, index) => (
+            <div 
+              key={userSkill.id}
+              className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium"
+              title={userSkill.user?.name || userSkill.user?.email}
+            >
+              {(userSkill.user?.name?.[0] || userSkill.user?.email?.[0] || 'U').toUpperCase()}
+            </div>
+          ))}
+          {remainingUsers > 0 && (
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white flex items-center justify-center">
+              <span className="text-white text-xs">+{remainingUsers}</span>
+            </div>
+          )}
+        </div>
+        <span className="text-gray-700 font-medium">{totalUsers}</span>
+      </div>
+    );
+  };
+
+  // Преобразование данных для таблицы навыков
+  const getSkillsTableData = () => {
+    return skills.map(skill => {
+      const userSkillsCount = skill.userSkills?.length || 0;
+      const resourcesCount = skill.learningResources?.length || 0;
+
+      return [
+        <div key={skill.id} className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-sm font-bold">
+              {skill.icon || skill.name.substring(0, 2).toUpperCase()}
+            </span>
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900">{skill.name}</div>
+            <div className="text-sm text-gray-500">{skill.description || "No description"}</div>
+          </div>
+        </div>,
+        <div key={`${skill.id}-category`} className="text-gray-700 capitalize">
+          {skill.category}
+        </div>,
+        <StatusBadge 
+          key={`${skill.id}-diff`} 
+          status={skill.difficulty} 
+          variant={
+            skill.difficulty === 'BEGINNER' ? 'success' : 
+            skill.difficulty === 'INTERMEDIATE' ? 'warning' : 'error'
+          } 
+        />,
+        renderUserAvatars(skill.userSkills, userSkillsCount),
+        <div key={`${skill.id}-resources`} className="text-center">
+          <span className="text-blue-600 font-semibold">{resourcesCount}</span>
+        </div>,
+        <ActionButton
+          key={`${skill.id}-actions`}
+          actions={[
+            {
+              type: "edit",
+              onClick: () => handleEditSkill(skill),
+            },
+            {
+              type: "view",
+              onClick: () => console.log("View skill", skill.name),
+            },
+            {
+              type: "stats",
+              onClick: () => console.log("View stats for", skill.name),
+            },
+            {
+              type: "delete",
+              onClick: () => handleDeleteClick(skill),
+            },
+          ]}
+          variant="default"
+          size="sm"
+        />,
+      ];
+    });
+  };
+
+  // Преобразование данных для таблицы путей обучения
+  const getLearningPathsTableData = () => {
+    return learningPaths.map(path => [
+      <div key={path.id} className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
+          <span className="text-white text-sm">🚀</span>
+        </div>
+        <div>
+          <div className="font-semibold text-gray-900">{path.title}</div>
+          <div className="text-sm text-gray-500">@{path.user?.name || path.user?.email?.split('@')[0] || 'unknown'}</div>
+        </div>
+      </div>,
+      <div key={`${path.id}-skills`} className="flex items-center space-x-2">
+        <div className="flex space-x-1">
+          {["🟢", "🟢", "🟢", "🟢", "⚪"].map((dot, i) => (
+            <span key={i}>{dot}</span>
+          ))}
+        </div>
+        <span className="text-sm text-gray-600">{path.milestones?.length || 0} milestones</span>
+      </div>,
+      <div key={`${path.id}-participants`} className="text-center">
+        <span className="text-gray-700 font-medium">0</span>
+      </div>,
+      <div key={`${path.id}-progress`} className="flex items-center space-x-3">
+        <div className="w-20 bg-gray-200 rounded-full h-2">
+          <div
+            className="bg-green-500 h-2 rounded-full"
+            style={{ width: "70%" }}
+          />
+        </div>
+        <span className="text-sm font-medium text-gray-600">70%</span>
+      </div>,
+      <ActionButton
+        key={`${path.id}-actions`}
+        actions={[
+          {
+            type: "edit",
+            onClick: () => console.log("Edit learning path", path.title),
+          },
+          {
+            type: "view",
+            onClick: () => console.log("View learning path", path.title),
+          },
+          {
+            type: "delete",
+            onClick: () => handleDeleteLearningPath(path.id, path.title),
+          },
+        ]}
+        variant="default"
+        size="sm"
+      />,
+    ]);
+  };
+
+  // Преобразование данных для таблицы сессий обучения
+  const getStudySessionsTableData = () => {
+    return studySessions.map(session => [
+      <div key={session.id} className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full"></div>
+        <span className="font-medium text-gray-900">@{session.userId?.substring(0, 8) || 'unknown'}</span>
+      </div>,
+      <span key={`${session.id}-skill`} className="text-gray-700">
+        {session.userSkill?.skill?.name || 'Unknown skill'}
+      </span>,
+      <div key={`${session.id}-duration`} className="flex items-center space-x-2 text-green-600 font-medium">
+        <Clock className="w-4 h-4" />
+        <span>{Math.round((session.duration || 0) / 60)}h {(session.duration || 0) % 60}m</span>
+      </div>,
+      <StatusBadge key={`${session.id}-type`} status={session.sessionType} variant="info" />,
+      <div key={`${session.id}-efficiency`} className="flex items-center space-x-2">
+        <div className="flex">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <span 
+              key={star} 
+              className={star <= Math.floor(((session.efficiency || 0) / 20)) ? "text-amber-400" : "text-gray-300"}
+            >
+              ⭐
+            </span>
+          ))}
+        </div>
+        <span className="text-sm font-medium text-gray-600">{session.efficiency || 0}%</span>
+      </div>,
+      <span key={`${session.id}-date`} className="text-gray-600">
+        {session.date ? new Date(session.date).toLocaleDateString('ru-RU', { 
+          day: 'numeric', 
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Unknown date'}
+      </span>,
+    ]);
+  };
 
   const renderTabContent = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case "skills":
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {mockSkills.length} of {mockSkills.length} skills
+                Showing {skills.length} of {skills.length} skills
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -309,19 +487,20 @@ export default function SkillsLearningPage() {
                 "Ресурсы",
                 "Действия",
               ]}
-              data={mockSkills}
+              data={getSkillsTableData()}
               striped={true}
               hover={true}
             />
           </div>
         );
 
+      // ... остальные табы остаются без изменений
       case "paths":
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {mockLearningPaths.length} of {mockLearningPaths.length} paths
+                Showing {learningPaths.length} of {learningPaths.length} paths
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -345,7 +524,7 @@ export default function SkillsLearningPage() {
                 "Прогресс",
                 "Действия",
               ]}
-              data={mockLearningPaths}
+              data={getLearningPathsTableData()}
               striped={true}
               hover={true}
             />
@@ -383,7 +562,7 @@ export default function SkillsLearningPage() {
 
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {mockStudySessions.length} of {mockStudySessions.length} sessions
+                Showing {studySessions.length} of {studySessions.length} sessions
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -430,7 +609,7 @@ export default function SkillsLearningPage() {
                 "Эффективность",
                 "Дата",
               ]}
-              data={mockStudySessions}
+              data={getStudySessionsTableData()}
               striped={true}
               hover={true}
             />
@@ -442,7 +621,7 @@ export default function SkillsLearningPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {mockResources.length} of {mockResources.length} resources
+                Showing 0 of 0 resources
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -480,20 +659,9 @@ export default function SkillsLearningPage() {
               </div>
             </div>
 
-            <Table
-              headers={[
-                "Ресурс",
-                "Тип",
-                "Навык",
-                "Сложность",
-                "Рейтинг",
-                "Просмотры",
-                "Действия",
-              ]}
-              data={mockResources}
-              striped={true}
-              hover={true}
-            />
+            <div className="text-center py-12">
+              <p className="text-gray-500">Ресурсы будут доступны в следующем обновлении</p>
+            </div>
           </div>
         );
 
@@ -515,20 +683,22 @@ export default function SkillsLearningPage() {
             Управление навыками и обучением
           </p>
         </div>
-        <button
-          onClick={() => console.log("Add new skill")}
-          className="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm"
+        <ActionButton
+          type="add"
+          onClick={handleAddSkill}
+          variant="solid"
+          size="md"
+          showLabels={true}
         >
-          <Plus className="w-5 h-5 mr-2" />
           Добавить навык
-        </button>
+        </ActionButton>
       </div>
 
       {/* Статистические карточки */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Всего навыков"
-          value="156"
+          value={stats.totalSkills.toString()}
           subtitle="Total skills"
           icon={<BookOpen className="w-6 h-6" />}
           color="blue"
@@ -536,7 +706,7 @@ export default function SkillsLearningPage() {
         />
         <StatCard
           title="Активные ученики"
-          value="324"
+          value={stats.activeLearners.toString()}
           subtitle="Active learners"
           icon={<Users className="w-6 h-6" />}
           color="green"
@@ -544,7 +714,7 @@ export default function SkillsLearningPage() {
         />
         <StatCard
           title="Часы обучения"
-          value="2,847"
+          value={stats.studyHours.toString()}
           subtitle="Study hours"
           icon={<Clock className="w-6 h-6" />}
           color="amber"
@@ -552,7 +722,7 @@ export default function SkillsLearningPage() {
         />
         <StatCard
           title="Ресурсы"
-          value="847"
+          value={stats.resources.toString()}
           subtitle="Learning resources"
           icon={<FileText className="w-6 h-6" />}
           color="purple"
@@ -570,6 +740,26 @@ export default function SkillsLearningPage() {
           {renderTabContent()}
         </div>
       </div>
+
+      {/* Модальные окна */}
+      <SkillModal
+        isOpen={isSkillModalOpen}
+        onClose={handleCloseSkillModal}
+        skill={editingSkill}
+        onSuccess={handleSkillSuccess}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Удаление навыка"
+        message={`Вы уверены, что хотите удалить навык "${deletingSkill?.name}"? Это действие нельзя отменить.`}
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        variant="delete"
+        isConfirming={isDeleting}
+      />
     </div>
   );
 }

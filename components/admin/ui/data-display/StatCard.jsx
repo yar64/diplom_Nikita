@@ -49,6 +49,11 @@ const colorClasses = {
   }
 };
 
+// Получаем цвет по умолчанию
+const getColors = (color) => {
+  return colorClasses[color] || colorClasses.blue;
+};
+
 export function StatCard({ 
   title, 
   value, 
@@ -60,12 +65,12 @@ export function StatCard({
   'data-testid': testId,
   ...props 
 }) {
-  const colors = colorClasses[color];
+  const colors = getColors(color);
   const IconComponent = iconComponents[icon];
   
   return (
     <div 
-      className={`rounded-2xl border-2 ${colors.bg} ${colors.border} p-5 relative overflow-hidden ${className}`}
+      className={`rounded-2xl border-2 ${colors.bg} ${colors.border} p-5 relative overflow-hidden ${className || ''}`}
       data-testid={testId}
       {...props}
     >

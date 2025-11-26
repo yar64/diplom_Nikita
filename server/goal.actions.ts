@@ -1,46 +1,87 @@
-// actions/goal.actions.ts
+// actions/goal.actions.js
 'use server'
 
-import { prisma } from '@/prisma/lib/prisma'
+import { prisma } from '../prisma/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-export async function createGoal(data: {
-  title: string
-  description?: string
-  targetDate: Date
-  userId: string
-  skillId: string
-}) {
+export async function getGoals() {
   try {
-    const goal = await prisma.goal.create({
-      data,
+    const goals = await prisma.goal.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true
+          }
+        },
+        skill: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    return { success: true, goals }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch goals' }
+  }
+}
+
+export async function getGoal(id) {
+  try {
+    const goal = await prisma.goal.findUnique({
+      where: { id },
       include: {
         user: true,
-        skill: true,
+        skill: true
+      }
+    })
+    return { success: true, goal }
+  } catch (error) {
+    return { success: false, error: 'Failed to fetch goal' }
+  }
+}
+
+export async function createGoal(data) {
+  try {
+    const goal = await prisma.goal.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        targetDate: data.targetDate,
+        isCompleted: data.isCompleted || false,
+        completedAt: data.completedAt,
+        userId: data.userId,
+        skillId: data.skillId,
       },
+      include: {
+        user: true,
+        skill: true
+      }
     })
     revalidatePath('/admin/goals')
-    revalidatePath(`/users/${data.userId}/goals`)
     return { success: true, goal }
   } catch (error) {
     return { success: false, error: 'Failed to create goal' }
   }
 }
 
-export async function updateGoal(id: string, data: {
-  title?: string
-  description?: string
-  targetDate?: Date
-  skillId?: string
-}) {
+export async function updateGoal(id, data) {
   try {
     const goal = await prisma.goal.update({
       where: { id },
-      data,
+      data: {
+        title: data.title,
+        description: data.description,
+        targetDate: data.targetDate,
+        isCompleted: data.isCompleted,
+        completedAt: data.isCompleted ? new Date() : null,
+        skillId: data.skillId,
+      },
       include: {
         user: true,
-        skill: true,
-      },
+        skill: true
+      }
     })
     revalidatePath('/admin/goals')
     revalidatePath(`/goals/${id}`)
@@ -50,7 +91,19 @@ export async function updateGoal(id: string, data: {
   }
 }
 
-export async function completeGoal(id: string) {
+export async function deleteGoal(id) {
+  try {
+    await prisma.goal.delete({
+      where: { id },
+    })
+    revalidatePath('/admin/goals')
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: 'Failed to delete goal' }
+  }
+}
+
+export async function completeGoal(id) {
   try {
     const goal = await prisma.goal.update({
       where: { id },
@@ -60,71 +113,13 @@ export async function completeGoal(id: string) {
       },
       include: {
         user: true,
-        skill: true,
-      },
+        skill: true
+      }
     })
     revalidatePath('/admin/goals')
-    revalidatePath(`/users/${goal.userId}/goals`)
+    revalidatePath(`/goals/${id}`)
     return { success: true, goal }
   } catch (error) {
     return { success: false, error: 'Failed to complete goal' }
-  }
-}
-
-export async function deleteGoal(id: string) {
-  try {
-    const goal = await prisma.goal.delete({
-      where: { id },
-    })
-    revalidatePath('/admin/goals')
-    revalidatePath(`/users/${goal.userId}/goals`)
-    return { success: true }
-  } catch (error) {
-    return { success: false, error: 'Failed to delete goal' }
-  }
-}
-
-export async function getGoal(id: string) {
-  try {
-    const goal = await prisma.goal.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        skill: true,
-      },
-    })
-    return { success: true, goal }
-  } catch (error) {
-    return { success: false, error: 'Failed to fetch goal' }
-  }
-}
-
-export async function getGoals() {
-  try {
-    const goals = await prisma.goal.findMany({
-      include: {
-        user: true,
-        skill: true,
-      },
-      orderBy: { targetDate: 'asc' }
-    })
-    return { success: true, goals }
-  } catch (error) {
-    return { success: false, error: 'Failed to fetch goals' }
-  }
-}
-
-export async function getUserGoals(userId: string) {
-  try {
-    const goals = await prisma.goal.findMany({
-      where: { userId },
-      include: {
-        skill: true,
-      },
-      orderBy: { targetDate: 'asc' }
-    })
-    return { success: true, goals }
-  } catch (error) {
-    return { success: false, error: 'Failed to fetch user goals' }
   }
 }

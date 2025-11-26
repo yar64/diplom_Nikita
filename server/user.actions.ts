@@ -99,15 +99,106 @@ export async function getUser(id: string) {
   }
 }
 
+// Алиас для getUser с другим именем для совместимости
+export async function getUserById(id: string) {
+  return getUser(id)
+}
+
 export async function getUsers() {
   try {
     const users = await prisma.user.findMany({
       include: {
         stats: true,
+        _count: {
+          select: {
+            skills: true,
+            projects: true,
+            sessions: true,
+            goals: true,
+            learningPaths: true,
+          }
+        }
       },
+      orderBy: { createdAt: 'desc' }
     })
     return { success: true, users }
   } catch (error) {
     return { success: false, error: 'Failed to fetch users' }
+  }
+}
+
+export async function getUserProfile(id: string) {
+  try {
+    console.log('Fetching user profile for ID:', id);
+    
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        stats: true,
+        skills: {
+          include: {
+            skill: true,
+          },
+        },
+        projects: {
+          include: {
+            skills: {
+              include: {
+                skill: true
+              }
+            }
+          }
+        },
+        learningPaths: {
+          include: {
+            milestones: {
+              include: {
+                skill: true
+              }
+            }
+          }
+        },
+        sessions: {
+          orderBy: { date: 'desc' },
+          take: 10
+        },
+        goals: {
+          where: {
+            isCompleted: false
+          },
+          include: {
+            skill: true
+          }
+        },
+        settings: true,
+        notificationSettings: true,
+        privacySettings: true,
+        appearanceSettings: true,
+        learningPreferences: true,
+        securitySettings: true,
+        _count: {
+          select: {
+            skills: true,
+            projects: true,
+            sessions: true,
+            goals: true,
+            learningPaths: true,
+            communityMemberships: true,
+            communityPosts: true,
+          }
+        }
+      },
+    })
+
+    console.log('User found:', user ? 'yes' : 'no');
+
+    if (!user) {
+      return { success: false, error: 'User not found' }
+    }
+
+    return { success: true, user }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    return { success: false, error: 'Failed to fetch user profile: ' + error.message }
   }
 }
