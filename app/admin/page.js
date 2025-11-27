@@ -16,10 +16,10 @@ const fallbackData = {
   recentUsers: [
     {
       id: 1,
-      firstName: "John",
-      lastName: "Doe",
-      username: "johndoe",
-      email: "john@example.com",
+      firstName: "Иван",
+      lastName: "Иванов",
+      username: "ivanov",
+      email: "ivan@example.com",
       skills: [
         { id: 1, name: "JavaScript" },
         { id: 2, name: "React" }
@@ -30,35 +30,35 @@ const fallbackData = {
     {
       id: 1,
       name: "JavaScript",
-      category: "Programming",
+      category: "Программирование",
       userCount: 15,
-      difficulty: "Intermediate"
+      difficulty: "Средний"
     },
     {
       id: 2,
       name: "Python",
-      category: "Programming", 
+      category: "Программирование", 
       userCount: 12,
-      difficulty: "Beginner"
+      difficulty: "Начальный"
     }
   ],
   chartData: {
     userGrowth: [
-      { month: 'Jun', users: 0 },
-      { month: 'Jul', users: 0 },
-      { month: 'Aug', users: 0 },
-      { month: 'Sep', users: 0 },
-      { month: 'Oct', users: 0 },
-      { month: 'Nov', users: 8 }
+      { month: 'Июнь', users: 0 },
+      { month: 'Июль', users: 0 },
+      { month: 'Авг', users: 0 },
+      { month: 'Сен', users: 0 },
+      { month: 'Окт', users: 0 },
+      { month: 'Ноя', users: 8 }
     ],
     studyActivity: [
-      { date: 'Thu', hours: 0 },
-      { date: 'Fri', hours: 0 },
-      { date: 'Sat', hours: 0 },
-      { date: 'Sun', hours: 0 },
-      { date: 'Mon', hours: 0 },
-      { date: 'Tue', hours: 2.2 },
-      { date: 'Wed', hours: 0 }
+      { date: 'Чт', hours: 0 },
+      { date: 'Пт', hours: 0 },
+      { date: 'Сб', hours: 0 },
+      { date: 'Вс', hours: 0 },
+      { date: 'Пн', hours: 0 },
+      { date: 'Вт', hours: 2.2 },
+      { date: 'Ср', hours: 0 }
     ],
     skillDistribution: [
       { skill: 'Backend', count: 1 },
@@ -82,7 +82,7 @@ export default async function AdminDashboard() {
   try {
     dashboardData = await getDashboardStats();
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error('Ошибка загрузки данных:', error);
     dataError = true;
     dashboardData = fallbackData;
   }
@@ -130,7 +130,7 @@ export default async function AdminDashboard() {
       key={`status-${user.id}`}
       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
     >
-      Active
+      Активен
     </span>,
   ]);
 
@@ -166,139 +166,140 @@ export default async function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6" data-section="dashboard">
-      {/* Header */}
+      {/* Заголовок */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Панель управления</h1>
         <p className="text-gray-600 mt-2">
-          Real-time overview of learning platform
+          Обзор платформы обучения в реальном времени
         </p>
         {dataError && (
           <div className="mt-2 p-2 bg-yellow-100 border border-yellow-400 rounded text-yellow-700 text-sm">
-            Using demo data. Server connection failed.
+            Используются демо-данные. Ошибка подключения к серверу.
           </div>
         )}
       </div>
 
-      {/* Stat Cards */}
+      {/* Статистические карточки */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
-          title="Total Users"
+          title="Всего пользователей"
           value={dashboardData.totalUsers || 0}
-          subtitle="Registered users"
+          subtitle="Зарегистрировано"
           icon="👥"
           color="blue"
           trend={{ value: 12, isPositive: true }}
         />
 
         <StatCard
-          title="Active Skills"
+          title="Активные навыки"
           value={dashboardData.activeSkills || 0}
-          subtitle="Being learned"
+          subtitle="Изучаются"
           icon="🎯"
           color="green"
           trend={{ value: 8, isPositive: true }}
         />
 
         <StatCard
-          title="Study Hours"
+          title="Часы обучения"
           value={dashboardData.studyHours || 0}
-          subtitle="This month"
+          subtitle="В этом месяце"
           icon="⏱️"
           color="amber"
           trend={{ value: 15, isPositive: true }}
         />
 
         <StatCard
-          title="Projects"
+          title="Проекты"
           value={dashboardData.ongoingProjects || 0}
-          subtitle="In progress"
+          subtitle="В процессе"
           icon="🚀"
           color="purple"
           trend={{ value: 5, isPositive: true }}
         />
       </div>
-      {/* Main Content - 2 columns */}
+
+      {/* Основной контент - 2 колонки */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column */}
+        {/* Левая колонка */}
         <div className="space-y-6">
-          {/* Recent Users Table */}
+          {/* Таблица недавних пользователей */}
           <div className="bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                Recent Users
+                Недавние пользователи
               </h2>
               <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View all →
+                Посмотреть все →
               </button>
             </div>
             {recentUsersData.length > 0 ? (
               <Table
-                headers={["User", "Email", "Skills", "Status"]}
+                headers={["Пользователь", "Email", "Навыки", "Статус"]}
                 data={recentUsersData}
                 striped
                 hover
               />
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No recent users data available
+                Нет данных о пользователях
               </div>
             )}
           </div>
 
-          {/* User Growth Chart */}
+          {/* График роста пользователей */}
           <ChartContainer
-            title="User Growth"
+            title="Рост пользователей"
             className="shadow-sm border-2 border-gray-100"
           >
             <UserGrowthChart data={dashboardData.chartData?.userGrowth} />
           </ChartContainer>
 
-          {/* Study Activity Chart */}
+          {/* График учебной активности */}
           <ChartContainer
-            title="Study Activity"
+            title="Учебная активность"
             className="shadow-sm border-2 border-gray-100"
           >
             <StudyActivityChart data={dashboardData.chartData?.studyActivity} />
           </ChartContainer>
         </div>
 
-        {/* Right Column */}
+        {/* Правая колонка */}
         <div className="space-y-6">
-          {/* Popular Skills Table */}
+          {/* Таблица популярных навыков */}
           <div className="bg-white rounded-2xl border-2 border-gray-100 shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">
-                Popular Skills
+                Популярные навыки
               </h2>
               <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View all →
+                Посмотреть все →
               </button>
             </div>
             {popularSkillsData.length > 0 ? (
               <Table
-                headers={["Skill", "Category", "Learners", "Level"]}
+                headers={["Навык", "Категория", "Учатся", "Уровень"]}
                 data={popularSkillsData}
                 striped
                 hover
               />
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No popular skills data available
+                Нет данных о навыках
               </div>
             )}
           </div>
 
-          {/* Skill Distribution Chart */}
+          {/* График распределения навыков */}
           <ChartContainer
-            title="Skill Distribution"
+            title="Распределение навыков"
             className="shadow-sm border-2 border-gray-100"
           >
             <SkillDistributionChart data={dashboardData.chartData?.skillDistribution} />
           </ChartContainer>
 
-          {/* Learning Progress Chart */}
+          {/* График прогресса обучения */}
           <ChartContainer
-            title="Learning Progress"
+            title="Прогресс обучения"
             className="shadow-sm border-2 border-gray-100"
           >
             <LearningProgressChart />

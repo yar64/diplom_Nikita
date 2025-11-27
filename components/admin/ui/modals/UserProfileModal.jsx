@@ -47,13 +47,13 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
         <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4">
           <div className="text-center py-12">
             <div className="text-lg font-medium text-gray-900 mb-2">
-              User not found
+              Пользователь не найден
             </div>
             <button
               onClick={onClose}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200"
             >
-              Close
+              Закрыть
             </button>
           </div>
         </div>
@@ -64,14 +64,14 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        {/* Header */}
+        {/* Заголовок */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <User className="w-6 h-6 mr-2" />
-              User Profile
+              Профиль пользователя
             </h2>
-            <p className="text-gray-600">Detailed information about {user.username}</p>
+            <p className="text-gray-600">Подробная информация о {user.username}</p>
           </div>
           <button
             onClick={onClose}
@@ -82,9 +82,9 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
           </button>
         </div>
 
-        {/* Content */}
+        {/* Содержимое */}
         <div className="p-6 space-y-6">
-          {/* Basic Information */}
+          {/* Основная информация */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-1 animate-slide-up" style={{ animationDelay: '0.3s' }}>
               <div className="flex flex-col items-center text-center">
@@ -97,7 +97,7 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
                 ) : (
                   <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4 transition-all duration-300 hover:scale-105">
                     <span className="text-white text-2xl font-medium">
-                      {user.firstName?.[0] || user.username?.[0] || 'U'}
+                      {user.firstName?.[0] || user.username?.[0] || 'П'}
                       {user.lastName?.[0] || ''}
                     </span>
                   </div>
@@ -126,7 +126,7 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
                 </div>
                 <div className="flex items-center text-gray-600 animate-slide-up" style={{ animationDelay: '0.5s' }}>
                   <Calendar className="w-5 h-5 mr-3 transition-all duration-200" />
-                  <span className="transition-all duration-200">Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                  <span className="transition-all duration-200">Присоединился {new Date(user.createdAt).toLocaleDateString('ru-RU')}</span>
                 </div>
                 {user.timezone && (
                   <div className="flex items-center text-gray-600 animate-slide-up" style={{ animationDelay: '0.6s' }}>
@@ -140,7 +140,7 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
                   ) : (
                     <EyeOff className="w-5 h-5 mr-3 text-gray-400 transition-all duration-200" />
                   )}
-                  <span className="transition-all duration-200">{user.isPublic ? 'Public Profile' : 'Private Profile'}</span>
+                  <span className="transition-all duration-200">{user.isPublic ? 'Публичный профиль' : 'Приватный профиль'}</span>
                 </div>
               </div>
 
@@ -152,98 +152,98 @@ export function UserProfileModal({ isOpen, onClose, user, loading }) {
             </div>
           </div>
 
-          {/* Statistics */}
+          {/* Статистика */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 rounded-lg p-4 text-center transition-all duration-300 hover:scale-105 animate-slide-up border border-blue-100" style={{ animationDelay: '0.9s' }}>
               <Target className="w-8 h-8 text-blue-600 mx-auto mb-2 transition-all duration-200" />
               <div className="text-2xl font-bold text-blue-600 transition-all duration-200">{user._count?.skills || 0}</div>
-              <div className="text-sm text-blue-600 transition-all duration-200">Skills</div>
+              <div className="text-sm text-blue-600 transition-all duration-200">Навыков</div>
             </div>
             <div className="bg-green-50 rounded-lg p-4 text-center transition-all duration-300 hover:scale-105 animate-slide-up border border-green-100" style={{ animationDelay: '1s' }}>
               <Briefcase className="w-8 h-8 text-green-600 mx-auto mb-2 transition-all duration-200" />
               <div className="text-2xl font-bold text-green-600 transition-all duration-200">{user._count?.projects || 0}</div>
-              <div className="text-sm text-green-600 transition-all duration-200">Projects</div>
+              <div className="text-sm text-green-600 transition-all duration-200">Проектов</div>
             </div>
             <div className="bg-purple-50 rounded-lg p-4 text-center transition-all duration-300 hover:scale-105 animate-slide-up border border-purple-100" style={{ animationDelay: '1.1s' }}>
               <BookOpen className="w-8 h-8 text-purple-600 mx-auto mb-2 transition-all duration-200" />
               <div className="text-2xl font-bold text-purple-600 transition-all duration-200">{user._count?.sessions || 0}</div>
-              <div className="text-sm text-purple-600 transition-all duration-200">Sessions</div>
+              <div className="text-sm text-purple-600 transition-all duration-200">Сессий</div>
             </div>
             <div className="bg-amber-50 rounded-lg p-4 text-center transition-all duration-300 hover:scale-105 animate-slide-up border border-amber-100" style={{ animationDelay: '1.2s' }}>
               <Users className="w-8 h-8 text-amber-600 mx-auto mb-2 transition-all duration-200" />
               <div className="text-2xl font-bold text-amber-600 transition-all duration-200">{user._count?.goals || 0}</div>
-              <div className="text-sm text-amber-600 transition-all duration-200">Goals</div>
+              <div className="text-sm text-amber-600 transition-all duration-200">Целей</div>
             </div>
           </div>
 
-          {/* User Stats */}
+          {/* Статистика пользователя */}
           {user.stats && (
             <div className="bg-gray-50 rounded-lg p-6 transition-all duration-300 animate-slide-up border border-gray-200" style={{ animationDelay: '1.3s' }}>
               <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center transition-all duration-200">
                 <BarChart3 className="w-5 h-5 mr-2 transition-all duration-200" />
-                Learning Statistics
+                Статистика обучения
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <div className="transition-all duration-200">
                   <div className="text-2xl font-bold text-gray-900 transition-all duration-200">{user.stats.totalStudyTime || 0}</div>
-                  <div className="text-sm text-gray-600 transition-all duration-200">Study Minutes</div>
+                  <div className="text-sm text-gray-600 transition-all duration-200">Минут обучения</div>
                 </div>
                 <div className="transition-all duration-200">
                   <div className="text-2xl font-bold text-gray-900 transition-all duration-200">{user.stats.completedGoals || 0}</div>
-                  <div className="text-sm text-gray-600 transition-all duration-200">Goals Completed</div>
+                  <div className="text-sm text-gray-600 transition-all duration-200">Завершено целей</div>
                 </div>
                 <div className="transition-all duration-200">
                   <div className="text-2xl font-bold text-gray-900 transition-all duration-200">{user.stats.currentStreak || 0}</div>
-                  <div className="text-sm text-gray-600 transition-all duration-200">Current Streak</div>
+                  <div className="text-sm text-gray-600 transition-all duration-200">Текущая серия</div>
                 </div>
                 <div className="transition-all duration-200">
                   <div className="text-2xl font-bold text-gray-900 transition-all duration-200">{user.stats.longestStreak || 0}</div>
-                  <div className="text-sm text-gray-600 transition-all duration-200">Longest Streak</div>
+                  <div className="text-sm text-gray-600 transition-all duration-200">Самая длинная серия</div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Settings Status */}
+          {/* Статус настроек */}
           <div className="bg-gray-50 rounded-lg p-6 transition-all duration-300 animate-slide-up border border-gray-200" style={{ animationDelay: '1.4s' }}>
-            <h4 className="text-lg font-semibold text-gray-900 mb-4 transition-all duration-200">Settings Status</h4>
+            <h4 className="text-lg font-semibold text-gray-900 mb-4 transition-all duration-200">Статус настроек</h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.settings ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <Shield className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">General Settings</span>
+                <span className="transition-all duration-200">Основные настройки</span>
               </div>
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.notificationSettings ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <Bell className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">Notifications</span>
+                <span className="transition-all duration-200">Уведомления</span>
               </div>
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.privacySettings ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <EyeOff className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">Privacy</span>
+                <span className="transition-all duration-200">Приватность</span>
               </div>
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.appearanceSettings ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <Palette className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">Appearance</span>
+                <span className="transition-all duration-200">Внешний вид</span>
               </div>
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.learningPreferences ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <GraduationCap className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">Learning</span>
+                <span className="transition-all duration-200">Обучение</span>
               </div>
               <div className={`flex items-center p-3 rounded-lg transition-all duration-300 hover:scale-105 ${user.securitySettings ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}>
                 <Key className="w-5 h-5 mr-2 transition-all duration-200" />
-                <span className="transition-all duration-200">Security</span>
+                <span className="transition-all duration-200">Безопасность</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
+        {/* Футер */}
         <div className="flex justify-end space-x-3 p-6 border-t border-gray-200">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 animate-slide-up"
             style={{ animationDelay: '1.5s' }}
           >
-            Close
+            Закрыть
           </button>
         </div>
       </div>

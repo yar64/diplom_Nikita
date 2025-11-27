@@ -55,18 +55,18 @@ import { UserModal } from "../../../components/admin/ui/modals/UserModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 
 const tabs = [
-  { id: "overview", label: "System Overview" },
-  { id: "users", label: "User Management" },
-  { id: "system", label: "System Settings" },
-  { id: "audit", label: "Audit Logs" },
-  { id: "settings", label: "User Settings" },
-  { id: "maintenance", label: "Maintenance" },
+  { id: "overview", label: "Обзор системы" },
+  { id: "users", label: "Управление пользователями" },
+  { id: "system", label: "Системные настройки" },
+  { id: "audit", label: "Журнал аудита" },
+  { id: "settings", label: "Настройки пользователей" },
+  { id: "maintenance", label: "Обслуживание" },
 ];
 
 const roleOptions = [
-  { value: "USER", label: "User" },
-  { value: "ADMIN", label: "Admin" },
-  { value: "MENTOR", label: "Mentor" },
+  { value: "USER", label: "Пользователь" },
+  { value: "ADMIN", label: "Администратор" },
+  { value: "MENTOR", label: "Наставник" },
 ];
 
 const roleColors = {
@@ -149,7 +149,7 @@ export default function AdminSettingsPage() {
           break;
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Ошибка загрузки данных:", error);
     } finally {
       setLoading(false);
     }
@@ -363,10 +363,10 @@ export default function AdminSettingsPage() {
         </div>
       </div>,
       <div key={`${user.id}-goal`} className="text-sm text-gray-600">
-        {user.dailyGoal || 30}min/day
+        {user.dailyGoal || 30}мин/день
       </div>,
       <div key={`${user.id}-date`} className="text-sm text-gray-600">
-        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Н/Д'}
       </div>,
       <ActionButton
         key={`${user.id}-actions`}
@@ -408,11 +408,11 @@ export default function AdminSettingsPage() {
             <span>{log.user.username || log.user.email}</span>
           </div>
         ) : (
-          'System'
+          'Система'
         )}
       </div>,
       <div key={`${log.id}-ip`} className="text-sm text-gray-500">
-        {log.ipAddress || 'N/A'}
+        {log.ipAddress || 'Н/Д'}
       </div>,
       <div key={`${log.id}-date`} className="text-sm text-gray-500">
         {new Date(log.createdAt).toLocaleString()}
@@ -439,28 +439,28 @@ export default function AdminSettingsPage() {
               <StatCard
                 title="Всего пользователей"
                 value={systemStats?.users?.toString() || "0"}
-                subtitle="Total users"
+                subtitle="Всего пользователей"
                 icon={<Users className="w-6 h-6" />}
                 color="blue"
               />
               <StatCard
                 title="Навыков в системе"
                 value={systemStats?.skills?.toString() || "0"}
-                subtitle="Total skills"
+                subtitle="Всего навыков"
                 icon={<Target className="w-6 h-6" />}
                 color="green"
               />
               <StatCard
                 title="Проектов создано"
                 value={systemStats?.projects?.toString() || "0"}
-                subtitle="Total projects"
+                subtitle="Всего проектов"
                 icon={<Briefcase className="w-6 h-6" />}
                 color="amber"
               />
               <StatCard
                 title="Сессий обучения"
                 value={systemStats?.sessions?.toString() || "0"}
-                subtitle="Study sessions"
+                subtitle="Учебных сессий"
                 icon={<BookOpen className="w-6 h-6" />}
                 color="purple"
               />
@@ -471,21 +471,21 @@ export default function AdminSettingsPage() {
               <StatCard
                 title="Сообществ"
                 value={systemStats?.communities?.toString() || "0"}
-                subtitle="Communities"
+                subtitle="Сообществ"
                 icon={<Users className="w-6 h-6" />}
                 color="indigo"
               />
               <StatCard
                 title="Целей поставлено"
                 value={systemStats?.goals?.toString() || "0"}
-                subtitle="Goals set"
+                subtitle="Поставленных целей"
                 icon={<Target className="w-6 h-6" />}
                 color="red"
               />
               <StatCard
                 title="Ресурсов обучения"
                 value={systemStats?.resources?.toString() || "0"}
-                subtitle="Learning resources"
+                subtitle="Учебных ресурсов"
                 icon={<FileText className="w-6 h-6" />}
                 color="emerald"
               />
@@ -554,7 +554,7 @@ export default function AdminSettingsPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {users.length} of {users.length} users
+                Показано {users.length} из {users.length} пользователей
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -697,7 +697,7 @@ export default function AdminSettingsPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {auditLogs.length} of {pagination.total || 0} logs
+                Показано {auditLogs.length} из {pagination.total || 0} записей
               </div>
               <div className="flex items-center space-x-2">
                 {pagination.pages > 1 && (
@@ -707,17 +707,17 @@ export default function AdminSettingsPage() {
                       disabled={page === 1}
                       className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
                     >
-                      Previous
+                      Назад
                     </button>
                     <span className="px-3 py-1 text-sm text-gray-600">
-                      Page {page} of {pagination.pages}
+                      Страница {page} из {pagination.pages}
                     </span>
                     <button
                       onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
                       disabled={page === pagination.pages}
                       className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
                     >
-                      Next
+                      Вперед
                     </button>
                   </div>
                 )}
@@ -842,7 +842,7 @@ export default function AdminSettingsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Settings className="w-8 h-8 mr-3" />
-            System Settings
+            Системные настройки
           </h1>
           <p className="text-gray-600 mt-1">
             Управление системой и пользователями

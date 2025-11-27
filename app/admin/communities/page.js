@@ -34,22 +34,22 @@ import { CommunityModal } from "../../../components/admin/ui/modals/CommunityMod
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 
 const tabs = [
-  { id: "communities", label: "Communities" },
-  { id: "members", label: "Members Management" },
-  { id: "posts", label: "Community Posts" },
+  { id: "communities", label: "Сообщества" },
+  { id: "members", label: "Управление участниками" },
+  { id: "posts", label: "Сообщения сообществ" },
 ];
 
 const visibilityOptions = [
   { value: "", label: "Все сообщества" },
-  { value: "public", label: "Public" },
-  { value: "private", label: "Private" },
+  { value: "public", label: "Публичные" },
+  { value: "private", label: "Приватные" },
 ];
 
 const roleOptions = [
   { value: "", label: "Все роли" },
-  { value: "MEMBER", label: "Member" },
-  { value: "MODERATOR", label: "Moderator" },
-  { value: "ADMIN", label: "Admin" },
+  { value: "MEMBER", label: "Участник" },
+  { value: "MODERATOR", label: "Модератор" },
+  { value: "ADMIN", label: "Администратор" },
 ];
 
 export default function CommunityPage() {
@@ -91,7 +91,7 @@ export default function CommunityPage() {
       if (communitiesResult.success) {
         setCommunities(communitiesResult.communities || []);
         
-        // Если выбранно сообщество, загружаем его участников и посты
+        // Если выбрано сообщество, загружаем его участников и сообщения
         if (selectedCommunity) {
           const [membersResult, postsResult] = await Promise.all([
             getCommunityMembers(selectedCommunity.id),
@@ -108,7 +108,7 @@ export default function CommunityPage() {
 
       await loadStats();
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Ошибка загрузки данных:", error);
     } finally {
       setLoading(false);
     }
@@ -271,19 +271,19 @@ export default function CommunityPage() {
         </div>
         <div>
           <div className="font-semibold text-gray-900">{community.name}</div>
-          <div className="text-sm text-gray-500">{community.description || "No description"}</div>
+          <div className="text-sm text-gray-500">{community.description || "Нет описания"}</div>
         </div>
       </div>,
       <div key={`${community.id}-visibility`} className="flex items-center space-x-2">
         {community.isPublic ? (
           <>
             <Globe className="w-4 h-4 text-green-500" />
-            <span className="text-green-700">Public</span>
+            <span className="text-green-700">Публичное</span>
           </>
         ) : (
           <>
             <Lock className="w-4 h-4 text-amber-500" />
-            <span className="text-amber-700">Private</span>
+            <span className="text-amber-700">Приватное</span>
           </>
         )}
       </div>,
@@ -357,9 +357,9 @@ export default function CommunityPage() {
           onChange={(e) => handleRoleChange(member, e.target.value)}
           className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          <option value="MEMBER">Member</option>
-          <option value="MODERATOR">Moderator</option>
-          <option value="ADMIN">Admin</option>
+          <option value="MEMBER">Участник</option>
+          <option value="MODERATOR">Модератор</option>
+          <option value="ADMIN">Администратор</option>
         </select>
       </div>,
       <div key={`${member.id}-join`} className="text-sm text-gray-600">
@@ -370,7 +370,7 @@ export default function CommunityPage() {
         actions={[
           {
             type: "view",
-            onClick: () => console.log("View user", member.user?.username),
+            onClick: () => console.log("Просмотр пользователя", member.user?.username),
           },
           {
             type: "delete",
@@ -383,7 +383,7 @@ export default function CommunityPage() {
     ]);
   };
 
-  // Преобразование данных для таблицы постов
+  // Преобразование данных для таблицы сообщений
   const getPostsTableData = () => {
     if (!selectedCommunity) return [];
 
@@ -403,7 +403,7 @@ export default function CommunityPage() {
         <div>
           <div className="font-semibold text-gray-900">{post.title}</div>
           <div className="text-sm text-gray-500">
-            by {post.author?.username} • {new Date(post.createdAt).toLocaleDateString()}
+            от {post.author?.username} • {new Date(post.createdAt).toLocaleDateString()}
           </div>
         </div>
       </div>,
@@ -418,7 +418,7 @@ export default function CommunityPage() {
         actions={[
           {
             type: "view",
-            onClick: () => console.log("View post", post.title),
+            onClick: () => console.log("Просмотр сообщения", post.title),
           },
           {
             type: "delete",
@@ -446,7 +446,7 @@ export default function CommunityPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {communities.length} of {communities.length} communities
+                Показано {communities.length} из {communities.length} сообществ
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -478,7 +478,7 @@ export default function CommunityPage() {
                 "Сообщество",
                 "Видимость",
                 "Участники",
-                "Посты",
+                "Сообщения",
                 "Создано",
                 "Действия",
               ]}
@@ -495,9 +495,9 @@ export default function CommunityPage() {
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
                 {selectedCommunity ? (
-                  `Showing ${members.length} members in "${selectedCommunity.name}"`
+                  `Показано ${members.length} участников в "${selectedCommunity.name}"`
                 ) : (
-                  "Select a community to view members"
+                  "Выберите сообщество для просмотра участников"
                 )}
               </div>
               <div className="flex space-x-3">
@@ -510,7 +510,7 @@ export default function CommunityPage() {
                     }}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Select Community</option>
+                    <option value="">Выберите сообщество</option>
                     {communities.map(community => (
                       <option key={community.id} value={community.id}>
                         {community.name}
@@ -559,9 +559,9 @@ export default function CommunityPage() {
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
                 {selectedCommunity ? (
-                  `Showing ${posts.length} posts in "${selectedCommunity.name}"`
+                  `Показано ${posts.length} сообщений в "${selectedCommunity.name}"`
                 ) : (
-                  "Select a community to view posts"
+                  "Выберите сообщество для просмотра сообщений"
                 )}
               </div>
               <div className="flex space-x-3">
@@ -574,7 +574,7 @@ export default function CommunityPage() {
                     }}
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">Select Community</option>
+                    <option value="">Выберите сообщество</option>
                     {communities.map(community => (
                       <option key={community.id} value={community.id}>
                         {community.name}
@@ -586,7 +586,7 @@ export default function CommunityPage() {
                   <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Поиск постов..."
+                    placeholder="Поиск сообщений..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
@@ -598,7 +598,7 @@ export default function CommunityPage() {
             {selectedCommunity ? (
               <Table
                 headers={[
-                  "Пост",
+                  "Сообщение",
                   "Содержание",
                   "Сообщество",
                   "Действия",
@@ -610,7 +610,7 @@ export default function CommunityPage() {
             ) : (
               <div className="text-center py-12">
                 <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Выберите сообщество для просмотра постов</p>
+                <p className="text-gray-500">Выберите сообщество для просмотра сообщений</p>
               </div>
             )}
           </div>
@@ -628,7 +628,7 @@ export default function CommunityPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Users className="w-8 h-8 mr-3" />
-            Community Management
+            Управление сообществами
           </h1>
           <p className="text-gray-600 mt-1">
             Управление сообществами и пользователями
@@ -650,7 +650,7 @@ export default function CommunityPage() {
         <StatCard
           title="Всего сообществ"
           value={stats.totalCommunities.toString()}
-          subtitle="Total communities"
+          subtitle="Всего сообществ"
           icon={<Users className="w-6 h-6" />}
           color="blue"
           trend={{ isPositive: true, value: "3" }}
@@ -658,15 +658,15 @@ export default function CommunityPage() {
         <StatCard
           title="Всего участников"
           value={stats.totalMembers.toString()}
-          subtitle="Total members"
+          subtitle="Всего участников"
           icon={<User className="w-6 h-6" />}
           color="green"
           trend={{ isPositive: true, value: "24" }}
         />
         <StatCard
-          title="Всего постов"
+          title="Всего сообщений"
           value={stats.totalPosts.toString()}
-          subtitle="Total posts"
+          subtitle="Всего сообщений"
           icon={<MessageSquare className="w-6 h-6" />}
           color="amber"
           trend={{ isPositive: true, value: "18" }}
@@ -674,7 +674,7 @@ export default function CommunityPage() {
         <StatCard
           title="Активные сообщества"
           value={stats.activeCommunities.toString()}
-          subtitle="Active communities"
+          subtitle="Активные сообщества"
           icon={<Shield className="w-6 h-6" />}
           color="purple"
           trend={{ isPositive: true, value: "5" }}
@@ -704,8 +704,8 @@ export default function CommunityPage() {
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        title={`Удаление ${deletingItem?.type === 'community' ? 'сообщества' : deletingItem?.type === 'post' ? 'поста' : 'участника'}`}
-        message={`Вы уверены, что хотите удалить ${deletingItem?.type === 'community' ? 'сообщество' : deletingItem?.type === 'post' ? 'пост' : 'участника'} "${deletingItem?.name || deletingItem?.title || deletingItem?.user?.username}"? Это действие нельзя отменить.`}
+        title={`Удаление ${deletingItem?.type === 'community' ? 'сообщества' : deletingItem?.type === 'post' ? 'сообщения' : 'участника'}`}
+        message={`Вы уверены, что хотите удалить ${deletingItem?.type === 'community' ? 'сообщество' : deletingItem?.type === 'post' ? 'сообщение' : 'участника'} "${deletingItem?.name || deletingItem?.title || deletingItem?.user?.username}"? Это действие нельзя отменить.`}
         confirmLabel="Удалить"
         cancelLabel="Отмена"
         variant="delete"

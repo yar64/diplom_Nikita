@@ -56,10 +56,10 @@ export function CommunityModal({
         onSuccess?.();
         onClose();
       } else {
-        setError(result.error || 'Operation failed');
+        setError(result.error || 'Операция не удалась');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('Произошла непредвиденная ошибка');
     } finally {
       setIsLoading(false);
     }
@@ -81,10 +81,10 @@ export function CommunityModal({
       title={
         <div className="flex items-center">
           {community ? <Edit3 className="w-5 h-5 mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
-          {community ? 'Edit Community' : 'Create New Community'}
+          {community ? 'Редактировать сообщество' : 'Создать новое сообщество'}
         </div>
       }
-      submitLabel={community ? 'Update Community' : 'Create Community'}
+      submitLabel={community ? 'Обновить сообщество' : 'Создать сообщество'}
       isSubmitting={isLoading}
       size="md"
     >
@@ -98,7 +98,7 @@ export function CommunityModal({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <Users className="w-4 h-4 mr-2" />
-            Community Name *
+            Название сообщества *
           </label>
           <input
             type="text"
@@ -107,13 +107,13 @@ export function CommunityModal({
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter community name"
+            placeholder="Введите название сообщества"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            Описание
           </label>
           <textarea
             name="description"
@@ -121,14 +121,14 @@ export function CommunityModal({
             onChange={handleChange}
             rows="3"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            placeholder="Enter community description"
+            placeholder="Введите описание сообщества"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <Image className="w-4 h-4 mr-2" />
-            Avatar URL
+            URL аватара
           </label>
           <input
             type="url"
@@ -151,7 +151,7 @@ export function CommunityModal({
             />
             <label className="ml-2 text-sm font-medium text-gray-700 flex items-center">
               <Globe className="w-4 h-4 mr-1 text-green-500" />
-              Public
+              Публичное
             </label>
           </div>
           
@@ -165,23 +165,23 @@ export function CommunityModal({
             />
             <label className="ml-2 text-sm font-medium text-gray-700 flex items-center">
               <Lock className="w-4 h-4 mr-1 text-amber-500" />
-              Private
+              Приватное
             </label>
           </div>
         </div>
 
-        {/* Preview */}
+        {/* Предпросмотр */}
         {formData.avatar && (
           <div className="border rounded-lg p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Preview
+              Предпросмотр
             </label>
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center overflow-hidden">
                 {formData.avatar ? (
                   <img 
                     src={formData.avatar} 
-                    alt="Community avatar"
+                    alt="Аватар сообщества"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -189,9 +189,9 @@ export function CommunityModal({
                 )}
               </div>
               <div>
-                <div className="font-medium text-gray-900">{formData.name || 'Community Name'}</div>
+                <div className="font-medium text-gray-900">{formData.name || 'Название сообщества'}</div>
                 <div className="text-sm text-gray-500">
-                  {formData.isPublic ? 'Public Community' : 'Private Community'}
+                  {formData.isPublic ? 'Публичное сообщество' : 'Приватное сообщество'}
                 </div>
               </div>
             </div>

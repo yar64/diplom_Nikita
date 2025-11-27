@@ -27,23 +27,23 @@ import { GoalModal } from "../../../components/admin/ui/modals/GoalModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 
 const tabs = [
-  { id: "projects", label: "Projects Management" },
-  { id: "goals", label: "Goals Management" },
+  { id: "projects", label: "Управление проектами" },
+  { id: "goals", label: "Управление целями" },
 ];
 
 const statusOptions = [
   { value: "", label: "Все статусы" },
-  { value: "PLANNED", label: "Planned" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "ON_HOLD", label: "On Hold" },
-  { value: "CANCELLED", label: "Cancelled" },
+  { value: "PLANNED", label: "Запланирован" },
+  { value: "IN_PROGRESS", label: "В процессе" },
+  { value: "COMPLETED", label: "Завершен" },
+  { value: "ON_HOLD", label: "На паузе" },
+  { value: "CANCELLED", label: "Отменен" },
 ];
 
 const completionOptions = [
   { value: "", label: "Все цели" },
-  { value: "completed", label: "Completed" },
-  { value: "active", label: "Active" },
+  { value: "completed", label: "Завершенные" },
+  { value: "active", label: "Активные" },
 ];
 
 export default function ProjectsGoalsPage() {
@@ -99,7 +99,7 @@ export default function ProjectsGoalsPage() {
 
       await loadStats();
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Ошибка загрузки данных:", error);
     } finally {
       setLoading(false);
     }
@@ -223,7 +223,7 @@ export default function ProjectsGoalsPage() {
         </div>
         <div>
           <div className="font-semibold text-gray-900">{project.title}</div>
-          <div className="text-sm text-gray-500">{project.description || "No description"}</div>
+          <div className="text-sm text-gray-500">{project.description || "Нет описания"}</div>
         </div>
       </div>,
       <div key={`${project.id}-user`} className="flex items-center space-x-2">
@@ -232,7 +232,7 @@ export default function ProjectsGoalsPage() {
       </div>,
       <div key={`${project.id}-skills`} className="flex items-center space-x-2">
         <Code className="w-4 h-4 text-gray-400" />
-        <span className="text-gray-700">{project._count?.skills || 0} skills</span>
+        <span className="text-gray-700">{project._count?.skills || 0} навыков</span>
       </div>,
       <StatusBadge 
         key={`${project.id}-status`} 
@@ -244,7 +244,7 @@ export default function ProjectsGoalsPage() {
         } 
       />,
       <div key={`${project.id}-dates`} className="text-sm text-gray-600">
-        {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Not started'}
+        {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'Не начат'}
       </div>,
       <ActionButton
         key={`${project.id}-actions`}
@@ -255,7 +255,7 @@ export default function ProjectsGoalsPage() {
           },
           {
             type: "view",
-            onClick: () => console.log("View project", project.title),
+            onClick: () => console.log("Просмотр проекта", project.title),
           },
           {
             type: "delete",
@@ -281,7 +281,7 @@ export default function ProjectsGoalsPage() {
         </div>
         <div>
           <div className="font-semibold text-gray-900">{goal.title}</div>
-          <div className="text-sm text-gray-500">{goal.description || "No description"}</div>
+          <div className="text-sm text-gray-500">{goal.description || "Нет описания"}</div>
         </div>
       </div>,
       <div key={`${goal.id}-user`} className="flex items-center space-x-2">
@@ -289,23 +289,23 @@ export default function ProjectsGoalsPage() {
         <span className="text-gray-700">{goal.user?.username || goal.user?.email}</span>
       </div>,
       <div key={`${goal.id}-skill`} className="text-gray-700">
-        {goal.skill?.name || 'No skill'}
+        {goal.skill?.name || 'Нет навыка'}
       </div>,
       <div key={`${goal.id}-status`} className="flex items-center">
         {goal.isCompleted ? (
           <div className="flex items-center space-x-1 text-green-600">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">Completed</span>
+            <span className="text-sm font-medium">Завершена</span>
           </div>
         ) : new Date(goal.targetDate) < new Date() ? (
           <div className="flex items-center space-x-1 text-red-600">
             <AlertCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">Overdue</span>
+            <span className="text-sm font-medium">Просрочена</span>
           </div>
         ) : (
           <div className="flex items-center space-x-1 text-amber-600">
             <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium">Active</span>
+            <span className="text-sm font-medium">Активна</span>
           </div>
         )}
       </div>,
@@ -325,7 +325,7 @@ export default function ProjectsGoalsPage() {
           }]),
           {
             type: "view",
-            onClick: () => console.log("View goal", goal.title),
+            onClick: () => console.log("Просмотр цели", goal.title),
           },
           {
             type: "delete",
@@ -353,7 +353,7 @@ export default function ProjectsGoalsPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {projects.length} of {projects.length} projects
+                Показано {projects.length} из {projects.length} проектов
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -401,7 +401,7 @@ export default function ProjectsGoalsPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {goals.length} of {goals.length} goals
+                Показано {goals.length} из {goals.length} целей
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -456,7 +456,7 @@ export default function ProjectsGoalsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Target className="w-8 h-8 mr-3" />
-            Projects & Goals
+            Проекты и цели
           </h1>
           <p className="text-gray-600 mt-1">
             Управление проектами и целями пользователей
@@ -493,7 +493,7 @@ export default function ProjectsGoalsPage() {
         <StatCard
           title="Всего проектов"
           value={stats.totalProjects.toString()}
-          subtitle="Total projects"
+          subtitle="Всего проектов"
           icon={<Briefcase className="w-6 h-6" />}
           color="blue"
           trend={{ isPositive: true, value: "5" }}
@@ -501,7 +501,7 @@ export default function ProjectsGoalsPage() {
         <StatCard
           title="Активные проекты"
           value={stats.activeProjects.toString()}
-          subtitle="Active projects"
+          subtitle="Активные проекты"
           icon={<Code className="w-6 h-6" />}
           color="green"
           trend={{ isPositive: true, value: "3" }}
@@ -509,7 +509,7 @@ export default function ProjectsGoalsPage() {
         <StatCard
           title="Всего целей"
           value={stats.totalGoals.toString()}
-          subtitle="Total goals"
+          subtitle="Всего целей"
           icon={<Target className="w-6 h-6" />}
           color="amber"
           trend={{ isPositive: true, value: "12" }}
@@ -517,7 +517,7 @@ export default function ProjectsGoalsPage() {
         <StatCard
           title="Завершенные цели"
           value={stats.completedGoals.toString()}
-          subtitle="Completed goals"
+          subtitle="Завершенные цели"
           icon={<CheckCircle className="w-6 h-6" />}
           color="purple"
           trend={{ isPositive: true, value: "8" }}

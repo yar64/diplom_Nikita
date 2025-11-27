@@ -1,14 +1,21 @@
 'use client';
 import { Modal } from '../../share/Modal';
+import { 
+  AlertTriangle, 
+  Trash2, 
+  CheckCircle, 
+  Info,
+  Loader2 
+} from 'lucide-react';
 
 export function ConfirmModal({ 
   isOpen, 
   onClose, 
   onConfirm,
-  title = "Confirm Action",
-  message = "Are you sure you want to proceed?",
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  title = "Подтверждение действия",
+  message = "Вы уверены, что хотите продолжить?",
+  confirmLabel = "Подтвердить",
+  cancelLabel = "Отмена",
   variant = 'default',
   isConfirming = false,
   ...modalProps 
@@ -16,19 +23,19 @@ export function ConfirmModal({
   const variantConfig = {
     default: {
       confirmButton: 'bg-blue-600 hover:bg-blue-700',
-      icon: 'ℹ️'
+      icon: <Info className="w-6 h-6 text-blue-500" />
     },
     delete: {
       confirmButton: 'bg-red-600 hover:bg-red-700',
-      icon: '🗑️'
+      icon: <Trash2 className="w-6 h-6 text-red-500" />
     },
     warning: {
       confirmButton: 'bg-amber-600 hover:bg-amber-700', 
-      icon: '⚠️'
+      icon: <AlertTriangle className="w-6 h-6 text-amber-500" />
     },
     success: {
       confirmButton: 'bg-green-600 hover:bg-green-700',
-      icon: '✅'
+      icon: <CheckCircle className="w-6 h-6 text-green-500" />
     }
   };
 
@@ -48,6 +55,9 @@ export function ConfirmModal({
     >
       <div className="p-6">
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            {config.icon}
+          </div>
           <div className="text-gray-600 mb-6 transition-all duration-300">{message}</div>
           
           <div className="flex justify-center space-x-3">
@@ -65,8 +75,8 @@ export function ConfirmModal({
             >
               {isConfirming ? (
                 <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Processing...
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Обработка...
                 </div>
               ) : (
                 confirmLabel

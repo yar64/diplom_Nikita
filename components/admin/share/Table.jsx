@@ -1,7 +1,7 @@
 export function Table({ 
   headers, 
   data, 
-  emptyMessage = "No data available", 
+  emptyMessage = "Нет данных", 
   className = "",
   striped = true,
   hover = true,

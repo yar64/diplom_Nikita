@@ -62,6 +62,13 @@ export function Modal({
       }`}
       onClick={handleOverlayClick}
     >
+      {/* Затемненный фон */}
+      <div 
+        className={`absolute inset-0 bg-black transition-opacity duration-300 ${
+          isVisible ? 'opacity-30' : 'opacity-0'
+        }`}
+      />
+      
       {/* Контент модального окна */}
       <div 
         className={`relative bg-white/95 backdrop-blur-xl rounded-2xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300 ${
@@ -79,7 +86,7 @@ export function Modal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Заголовок */}
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
             {title && (
@@ -89,6 +96,7 @@ export function Modal({
               <button
                 onClick={handleClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100/50"
+                aria-label="Закрыть окно"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -98,7 +106,7 @@ export function Modal({
           </div>
         )}
         
-        {/* Content */}
+        {/* Содержимое */}
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           {children}
         </div>

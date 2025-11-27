@@ -20,12 +20,12 @@ export default function NotFound() {
 
         {/* Заголовок */}
         <h1 className="text-2xl font-semibold text-gray-900 mb-3">
-          Page not found
+          Страница не найдена
         </h1>
         
         {/* Описание */}
         <p className="text-gray-600 mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved.
+          Страница, которую вы ищете, не существует или была перемещена.
         </p>
 
         {/* Код ошибки */}
@@ -40,7 +40,7 @@ export default function NotFound() {
             className="flex items-center justify-center px-6 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
           >
             <LayoutDashboard className="w-4 h-4 mr-2" />
-            Dashboard
+            Панель управления
           </Link>
           
           <button
@@ -48,7 +48,7 @@ export default function NotFound() {
             className="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Go back
+            Назад
           </button>
         </div>
 
@@ -57,19 +57,19 @@ export default function NotFound() {
 
         {/* Быстрые ссылки */}
         <div className="text-sm text-gray-500">
-          <p className="mb-3">Or navigate to:</p>
+          <p className="mb-3">Или перейдите к:</p>
           <div className="flex justify-center space-x-4">
             <Link 
               href="/admin/users" 
               className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
             >
-              Users
+              Пользователи
             </Link>
             <Link 
               href="/admin/skills" 
               className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
             >
-              Skills
+              Навыки
             </Link>
           </div>
         </div>

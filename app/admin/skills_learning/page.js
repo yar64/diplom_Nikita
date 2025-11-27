@@ -21,13 +21,13 @@ import { SkillModal } from "../../../components/admin/ui/modals/SkillModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 
 const tabs = [
-  { id: "skills", label: "Skills Management" },
-  { id: "paths", label: "Learning Paths" },
-  { id: "sessions", label: "Study Sessions" },
-  { id: "resources", label: "Resources" },
+  { id: "skills", label: "Управление навыками" },
+  { id: "paths", label: "Пути обучения" },
+  { id: "sessions", label: "Учебные сессии" },
+  { id: "resources", label: "Ресурсы" },
 ];
 
-// Filter options
+// Опции фильтров
 const categoryOptions = [
   { value: "", label: "Все категории" },
   { value: "frontend", label: "Frontend" },
@@ -51,15 +51,15 @@ const periodOptions = [
 
 const typeOptions = [
   { value: "", label: "Все типы" },
-  { value: "THEORY", label: "Theory" },
-  { value: "PRACTICE", label: "Practice" },
+  { value: "THEORY", label: "Теория" },
+  { value: "PRACTICE", label: "Практика" },
 ];
 
 const difficultyOptions = [
   { value: "", label: "Все сложности" },
-  { value: "BEGINNER", label: "Beginner" },
-  { value: "INTERMEDIATE", label: "Intermediate" },
-  { value: "ADVANCED", label: "Advanced" },
+  { value: "BEGINNER", label: "Начинающий" },
+  { value: "INTERMEDIATE", label: "Средний" },
+  { value: "ADVANCED", label: "Продвинутый" },
 ];
 
 export default function SkillsLearningPage() {
@@ -104,7 +104,7 @@ export default function SkillsLearningPage() {
           if (skillsResult.success) {
             setSkills(skillsResult.skills || []);
           } else {
-            console.error("Failed to load skills:", skillsResult.error);
+            console.error("Ошибка загрузки навыков:", skillsResult.error);
           }
           break;
         case "paths":
@@ -112,7 +112,7 @@ export default function SkillsLearningPage() {
           if (pathsResult.success) {
             setLearningPaths(pathsResult.learningPaths || []);
           } else {
-            console.error("Failed to load learning paths:", pathsResult.error);
+            console.error("Ошибка загрузки путей обучения:", pathsResult.error);
           }
           break;
         case "sessions":
@@ -121,7 +121,7 @@ export default function SkillsLearningPage() {
           if (sessionsResult.success) {
             setStudySessions(sessionsResult.sessions || []);
           } else {
-            console.error("Failed to load study sessions:", sessionsResult.error);
+            console.error("Ошибка загрузки учебных сессий:", sessionsResult.error);
           }
           break;
       }
@@ -129,7 +129,7 @@ export default function SkillsLearningPage() {
       // Загрузка статистики
       await loadStats();
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Ошибка загрузки данных:", error);
     } finally {
       setLoading(false);
     }
@@ -287,7 +287,7 @@ export default function SkillsLearningPage() {
           </div>
           <div>
             <div className="font-semibold text-gray-900">{skill.name}</div>
-            <div className="text-sm text-gray-500">{skill.description || "No description"}</div>
+            <div className="text-sm text-gray-500">{skill.description || "Нет описания"}</div>
           </div>
         </div>,
         <div key={`${skill.id}-category`} className="text-gray-700 capitalize">
@@ -314,11 +314,11 @@ export default function SkillsLearningPage() {
             },
             {
               type: "view",
-              onClick: () => console.log("View skill", skill.name),
+              onClick: () => console.log("Просмотр навыка", skill.name),
             },
             {
               type: "stats",
-              onClick: () => console.log("View stats for", skill.name),
+              onClick: () => console.log("Статистика для", skill.name),
             },
             {
               type: "delete",
@@ -341,7 +341,7 @@ export default function SkillsLearningPage() {
         </div>
         <div>
           <div className="font-semibold text-gray-900">{path.title}</div>
-          <div className="text-sm text-gray-500">@{path.user?.name || path.user?.email?.split('@')[0] || 'unknown'}</div>
+          <div className="text-sm text-gray-500">@{path.user?.name || path.user?.email?.split('@')[0] || 'неизвестно'}</div>
         </div>
       </div>,
       <div key={`${path.id}-skills`} className="flex items-center space-x-2">
@@ -350,7 +350,7 @@ export default function SkillsLearningPage() {
             <span key={i}>{dot}</span>
           ))}
         </div>
-        <span className="text-sm text-gray-600">{path.milestones?.length || 0} milestones</span>
+        <span className="text-sm text-gray-600">{path.milestones?.length || 0} этапов</span>
       </div>,
       <div key={`${path.id}-participants`} className="text-center">
         <span className="text-gray-700 font-medium">0</span>
@@ -369,11 +369,11 @@ export default function SkillsLearningPage() {
         actions={[
           {
             type: "edit",
-            onClick: () => console.log("Edit learning path", path.title),
+            onClick: () => console.log("Редактировать путь обучения", path.title),
           },
           {
             type: "view",
-            onClick: () => console.log("View learning path", path.title),
+            onClick: () => console.log("Просмотреть путь обучения", path.title),
           },
           {
             type: "delete",
@@ -391,14 +391,14 @@ export default function SkillsLearningPage() {
     return studySessions.map(session => [
       <div key={session.id} className="flex items-center space-x-2">
         <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full"></div>
-        <span className="font-medium text-gray-900">@{session.userId?.substring(0, 8) || 'unknown'}</span>
+        <span className="font-medium text-gray-900">@{session.userId?.substring(0, 8) || 'неизвестно'}</span>
       </div>,
       <span key={`${session.id}-skill`} className="text-gray-700">
-        {session.userSkill?.skill?.name || 'Unknown skill'}
+        {session.userSkill?.skill?.name || 'Неизвестный навык'}
       </span>,
       <div key={`${session.id}-duration`} className="flex items-center space-x-2 text-green-600 font-medium">
         <Clock className="w-4 h-4" />
-        <span>{Math.round((session.duration || 0) / 60)}h {(session.duration || 0) % 60}m</span>
+        <span>{Math.round((session.duration || 0) / 60)}ч {(session.duration || 0) % 60}м</span>
       </div>,
       <StatusBadge key={`${session.id}-type`} status={session.sessionType} variant="info" />,
       <div key={`${session.id}-efficiency`} className="flex items-center space-x-2">
@@ -420,7 +420,7 @@ export default function SkillsLearningPage() {
           month: 'short',
           hour: '2-digit',
           minute: '2-digit'
-        }) : 'Unknown date'}
+        }) : 'Неизвестная дата'}
       </span>,
     ]);
   };
@@ -440,7 +440,7 @@ export default function SkillsLearningPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {skills.length} of {skills.length} skills
+                Показано {skills.length} из {skills.length} навыков
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -494,13 +494,12 @@ export default function SkillsLearningPage() {
           </div>
         );
 
-      // ... остальные табы остаются без изменений
       case "paths":
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {learningPaths.length} of {learningPaths.length} paths
+                Показано {learningPaths.length} из {learningPaths.length} путей
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -562,7 +561,7 @@ export default function SkillsLearningPage() {
 
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing {studySessions.length} of {studySessions.length} sessions
+                Показано {studySessions.length} из {studySessions.length} сессий
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -621,7 +620,7 @@ export default function SkillsLearningPage() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Showing 0 of 0 resources
+                Показано 0 из 0 ресурсов
               </div>
               <div className="flex space-x-3">
                 <div className="relative">
@@ -677,7 +676,7 @@ export default function SkillsLearningPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <BookOpen className="w-8 h-8 mr-3" />
-            Skills & Learning
+            Навыки и обучение
           </h1>
           <p className="text-gray-600 mt-1">
             Управление навыками и обучением
@@ -699,7 +698,7 @@ export default function SkillsLearningPage() {
         <StatCard
           title="Всего навыков"
           value={stats.totalSkills.toString()}
-          subtitle="Total skills"
+          subtitle="Всего навыков"
           icon={<BookOpen className="w-6 h-6" />}
           color="blue"
           trend={{ isPositive: true, value: "8" }}
@@ -707,7 +706,7 @@ export default function SkillsLearningPage() {
         <StatCard
           title="Активные ученики"
           value={stats.activeLearners.toString()}
-          subtitle="Active learners"
+          subtitle="Активные ученики"
           icon={<Users className="w-6 h-6" />}
           color="green"
           trend={{ isPositive: true, value: "12" }}
@@ -715,7 +714,7 @@ export default function SkillsLearningPage() {
         <StatCard
           title="Часы обучения"
           value={stats.studyHours.toString()}
-          subtitle="Study hours"
+          subtitle="Часы обучения"
           icon={<Clock className="w-6 h-6" />}
           color="amber"
           trend={{ isPositive: true, value: "8" }}
@@ -723,7 +722,7 @@ export default function SkillsLearningPage() {
         <StatCard
           title="Ресурсы"
           value={stats.resources.toString()}
-          subtitle="Learning resources"
+          subtitle="Учебные ресурсы"
           icon={<FileText className="w-6 h-6" />}
           color="purple"
           trend={{ isPositive: true, value: "15" }}

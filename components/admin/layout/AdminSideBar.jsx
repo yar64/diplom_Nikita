@@ -14,32 +14,32 @@ import {
 
 const menuItems = [
   { 
-    name: 'Dashboard', 
+    name: 'Панель управления', 
     href: '/admin', 
     icon: LayoutDashboard 
   },
   { 
-    name: 'Users', 
+    name: 'Пользователи', 
     href: '/admin/users', 
     icon: Users 
   },
   { 
-    name: 'Skills & Learning', 
+    name: 'Навыки и обучение', 
     href: '/admin/skills_learning', 
     icon: Target 
   },
   { 
-    name: 'Projects & Goals', 
+    name: 'Проекты и цели', 
     href: '/admin/project_goal', 
     icon: Rocket 
   },
   { 
-    name: 'Communities', 
+    name: 'Сообщества', 
     href: '/admin/communities', 
     icon: Users2 
   },
   { 
-    name: 'System', 
+    name: 'Система', 
     href: '/admin/settings', 
     icon: Settings 
   },
@@ -50,20 +50,20 @@ export function AdminSidebar() {
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 min-h-screen flex flex-col">
-      {/* Header */}
+      {/* Шапка */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">A</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
-            <p className="text-xs text-gray-500">Skills Tracker</p>
+            <h1 className="text-lg font-bold text-gray-900">Панель администратора</h1>
+            <p className="text-xs text-gray-500">Трекер навыков</p>
           </div>
         </div>
       </div>
       
-      {/* Navigation */}
+      {/* Навигация */}
       <nav className="flex-1 mt-6">
         {menuItems.map((item) => {
           const isActive = pathname === item.href || 
@@ -101,15 +101,15 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      {/* Footer */}
+      {/* Подвал */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
           <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-xs">AD</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-            <p className="text-xs text-gray-500 truncate">Administrator</p>
+            <p className="text-sm font-medium text-gray-900 truncate">Администратор</p>
+            <p className="text-xs text-gray-500 truncate">Администратор системы</p>
           </div>
         </div>
       </div>

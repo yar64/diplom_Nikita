@@ -46,11 +46,11 @@ export function ProjectModal({
   }, [project, isOpen]);
 
   const statusOptions = [
-    { value: 'PLANNED', label: 'Planned' },
-    { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'COMPLETED', label: 'Completed' },
-    { value: 'ON_HOLD', label: 'On Hold' },
-    { value: 'CANCELLED', label: 'Cancelled' }
+    { value: 'PLANNED', label: 'Запланирован' },
+    { value: 'IN_PROGRESS', label: 'В процессе' },
+    { value: 'COMPLETED', label: 'Завершен' },
+    { value: 'ON_HOLD', label: 'На паузе' },
+    { value: 'CANCELLED', label: 'Отменен' }
   ];
 
   const handleSubmit = async (e) => {
@@ -71,10 +71,10 @@ export function ProjectModal({
         onSuccess?.();
         onClose();
       } else {
-        setError(result.error || 'Operation failed');
+        setError(result.error || 'Операция не удалась');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('Произошла непредвиденная ошибка');
     } finally {
       setIsLoading(false);
     }
@@ -105,10 +105,10 @@ export function ProjectModal({
       title={
         <div className="flex items-center">
           {project ? <Edit3 className="w-5 h-5 mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
-          {project ? 'Edit Project' : 'Create New Project'}
+          {project ? 'Редактировать проект' : 'Создать новый проект'}
         </div>
       }
-      submitLabel={project ? 'Update Project' : 'Create Project'}
+      submitLabel={project ? 'Обновить проект' : 'Создать проект'}
       isSubmitting={isLoading}
       size="lg"
     >
@@ -122,7 +122,7 @@ export function ProjectModal({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <Briefcase className="w-4 h-4 mr-2" />
-            Project Title *
+            Название проекта *
           </label>
           <input
             type="text"
@@ -131,13 +131,13 @@ export function ProjectModal({
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter project title"
+            placeholder="Введите название проекта"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            Описание
           </label>
           <textarea
             name="description"
@@ -145,7 +145,7 @@ export function ProjectModal({
             onChange={handleChange}
             rows="3"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            placeholder="Enter project description"
+            placeholder="Введите описание проекта"
           />
         </div>
 
@@ -153,7 +153,7 @@ export function ProjectModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
               <Code className="w-4 h-4 mr-2" />
-              Repository URL
+              URL репозитория
             </label>
             <input
               type="url"
@@ -168,7 +168,7 @@ export function ProjectModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
               <Globe className="w-4 h-4 mr-2" />
-              Demo URL
+              URL демо
             </label>
             <input
               type="url"
@@ -184,7 +184,7 @@ export function ProjectModal({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
+              Статус
             </label>
             <select
               name="status"
@@ -203,7 +203,7 @@ export function ProjectModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
-              Start Date
+              Дата начала
             </label>
             <input
               type="date"
@@ -217,7 +217,7 @@ export function ProjectModal({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
               <Calendar className="w-4 h-4 mr-2" />
-              End Date
+              Дата окончания
             </label>
             <input
               type="date"
@@ -232,7 +232,7 @@ export function ProjectModal({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <User className="w-4 h-4 mr-2" />
-            User ID *
+            ID пользователя *
           </label>
           <input
             type="text"
@@ -241,13 +241,13 @@ export function ProjectModal({
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter user ID"
+            placeholder="Введите ID пользователя"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Skills
+            Навыки
           </label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
             {skills.map(skill => (

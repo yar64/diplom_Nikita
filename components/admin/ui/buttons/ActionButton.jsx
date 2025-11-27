@@ -43,22 +43,22 @@ const actionIcons = {
 
 // Лейблы по типам действий
 const actionLabels = {
-  edit: "Edit",
-  view: "View",
-  delete: "Delete",
-  stats: "Stats",
-  download: "Download",
-  share: "Share",
-  copy: "Copy",
-  add: "Add",
-  search: "Search",
-  filter: "Filter",
-  refresh: "Refresh",
-  settings: "Settings",
-  user: "User",
-  mail: "Mail",
-  lock: "Lock",
-  unlock: "Unlock"
+  edit: "Редактировать",
+  view: "Просмотреть",
+  delete: "Удалить",
+  stats: "Статистика",
+  download: "Скачать",
+  share: "Поделиться",
+  copy: "Копировать",
+  add: "Добавить",
+  search: "Поиск",
+  filter: "Фильтр",
+  refresh: "Обновить",
+  settings: "Настройки",
+  user: "Пользователь",
+  mail: "Почта",
+  lock: "Заблокировать",
+  unlock: "Разблокировать"
 };
 
 // Цвета по типам действий
@@ -120,7 +120,7 @@ const DropdownActions = ({ actions, variant, size, isOpen, onToggle }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-32 py-1"> {/* Увеличил z-index до 50 и shadow-xl */}
+        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-50 min-w-32 py-1">
           {actions.map((action, index) => {
             const IconComponent = actionIcons[action.type];
             const label = action.label || actionLabels[action.type];
@@ -238,7 +238,7 @@ const ActionButton = ({
   if (allActions.length === 0) return null;
 
   return (
-    <div className={`relative ${className}`}> {/* Добавил relative здесь тоже */}
+    <div className={`relative ${className}`}>
       <DropdownActions
         actions={allActions}
         variant={variant}

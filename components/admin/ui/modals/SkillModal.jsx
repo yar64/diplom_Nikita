@@ -45,18 +45,18 @@ export function SkillModal({
   }, [skill, isOpen]);
 
   const categories = [
-    { value: 'technical', label: 'Technical', icon: <Code className="w-4 h-4" /> },
-    { value: 'soft-skills', label: 'Soft Skills', icon: <HeartHandshake className="w-4 h-4" /> },
-    { value: 'language', label: 'Language', icon: <Languages className="w-4 h-4" /> },
-    { value: 'business', label: 'Business', icon: <Briefcase className="w-4 h-4" /> },
-    { value: 'creative', label: 'Creative', icon: <Palette className="w-4 h-4" /> }
+    { value: 'technical', label: 'Технические', icon: <Code className="w-4 h-4" /> },
+    { value: 'soft-skills', label: 'Гибкие навыки', icon: <HeartHandshake className="w-4 h-4" /> },
+    { value: 'language', label: 'Языки', icon: <Languages className="w-4 h-4" /> },
+    { value: 'business', label: 'Бизнес', icon: <Briefcase className="w-4 h-4" /> },
+    { value: 'creative', label: 'Творческие', icon: <Palette className="w-4 h-4" /> }
   ];
 
   const difficulties = [
-    { value: 'BEGINNER', label: 'Beginner', icon: <Star className="w-4 h-4" /> },
-    { value: 'INTERMEDIATE', label: 'Intermediate', icon: <TrendingUp className="w-4 h-4" /> },
-    { value: 'ADVANCED', label: 'Advanced', icon: <Award className="w-4 h-4" /> },
-    { value: 'EXPERT', label: 'Expert', icon: <Target className="w-4 h-4" /> }
+    { value: 'BEGINNER', label: 'Начинающий', icon: <Star className="w-4 h-4" /> },
+    { value: 'INTERMEDIATE', label: 'Средний', icon: <TrendingUp className="w-4 h-4" /> },
+    { value: 'ADVANCED', label: 'Продвинутый', icon: <Award className="w-4 h-4" /> },
+    { value: 'EXPERT', label: 'Эксперт', icon: <Target className="w-4 h-4" /> }
   ];
 
   const handleSubmit = async (e) => {
@@ -79,10 +79,10 @@ export function SkillModal({
         onSuccess?.();
         onClose();
       } else {
-        setError(result.error || 'Operation failed');
+        setError(result.error || 'Операция не удалась');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('Произошла непредвиденная ошибка');
     } finally {
       setIsLoading(false);
     }
@@ -104,10 +104,10 @@ export function SkillModal({
       title={
         <div className="flex items-center animate-fade-in">
           {skill ? <Edit3 className="w-5 h-5 mr-2" /> : <Plus className="w-5 h-5 mr-2" />}
-          {skill ? 'Edit Skill' : 'Create New Skill'}
+          {skill ? 'Редактировать навык' : 'Создать новый навык'}
         </div>
       }
-      submitLabel={skill ? 'Update Skill' : 'Create Skill'}
+      submitLabel={skill ? 'Обновить навык' : 'Создать навык'}
       isSubmitting={isLoading}
       size="md"
     >
@@ -121,7 +121,7 @@ export function SkillModal({
         <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <Target className="w-4 h-4 mr-2" />
-            Skill Name *
+            Название навыка *
           </label>
           <input
             type="text"
@@ -130,14 +130,14 @@ export function SkillModal({
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            placeholder="Enter skill name"
+            placeholder="Введите название навыка"
           />
         </div>
 
         <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
           <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             <FileText className="w-4 h-4 mr-2" />
-            Description
+            Описание
           </label>
           <textarea
             name="description"
@@ -145,14 +145,14 @@ export function SkillModal({
             onChange={handleChange}
             rows="3"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
-            placeholder="Enter skill description"
+            placeholder="Введите описание навыка"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category *
+              Категория *
             </label>
             <select
               name="category"
@@ -171,7 +171,7 @@ export function SkillModal({
 
           <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Difficulty Level
+              Уровень сложности
             </label>
             <select
               name="difficulty"
@@ -190,7 +190,7 @@ export function SkillModal({
 
         <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Icon URL
+            URL иконки
           </label>
           <input
             type="url"
@@ -198,14 +198,14 @@ export function SkillModal({
             value={formData.icon}
             onChange={handleChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-            placeholder="Optional: Enter icon URL"
+            placeholder="Опционально: введите URL иконки"
           />
         </div>
 
-        {/* Preview категории */}
+        {/* Превью категории */}
         <div className="animate-slide-up" style={{ animationDelay: '0.6s' }}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Category Preview
+            Превью категории
           </label>
           <div className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mr-3 text-white">
@@ -216,16 +216,16 @@ export function SkillModal({
                 {categories.find(cat => cat.value === formData.category)?.label}
               </div>
               <div className="text-xs text-gray-500">
-                This icon will represent the skill category
+                Эта иконка будет представлять категорию навыка
               </div>
             </div>
           </div>
         </div>
 
-        {/* Preview сложности */}
+        {/* Превью сложности */}
         <div className="animate-slide-up" style={{ animationDelay: '0.7s' }}>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Difficulty Preview
+            Превью сложности
           </label>
           <div className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
             <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex items-center justify-center mr-3 text-white">
@@ -236,7 +236,7 @@ export function SkillModal({
                 {difficulties.find(diff => diff.value === formData.difficulty)?.label}
               </div>
               <div className="text-xs text-gray-500">
-                Skill difficulty level
+                Уровень сложности навыка
               </div>
             </div>
           </div>

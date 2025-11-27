@@ -23,10 +23,10 @@ import ActionButton from '../../../components/admin/ui/buttons/ActionButton'
 import { getUsers, deleteUser, getUserProfile } from "../../../server/user.actions";
 
 const tabs = [
-  { id: "all", label: "All Users" },
-  { id: "students", label: "Students" },
-  { id: "teachers", label: "Teachers" },
-  { id: "admins", label: "Admins" },
+  { id: "all", label: "Все пользователи" },
+  { id: "students", label: "Студенты" },
+  { id: "teachers", label: "Преподаватели" },
+  { id: "admins", label: "Администраторы" },
 ];
 
 const roleColors = {
@@ -56,10 +56,10 @@ export default function UsersPage() {
       if (result.success) {
         setUsers(result.users || []);
       } else {
-        console.error("Failed to load users:", result.error);
+        console.error("Ошибка загрузки пользователей:", result.error);
       }
     } catch (error) {
-      console.error("Error loading users:", error);
+      console.error("Ошибка загрузки пользователей:", error);
     } finally {
       setLoading(false);
     }
@@ -79,10 +79,10 @@ export default function UsersPage() {
         setViewingUser(result.user);
         setIsUserProfileModalOpen(true);
       } else {
-        console.error("Failed to load user profile:", result.error);
+        console.error("Ошибка загрузки профиля:", result.error);
       }
     } catch (error) {
-      console.error("Error loading user profile:", error);
+      console.error("Ошибка загрузки профиля:", error);
     } finally {
       setProfileLoading(false);
     }
@@ -91,23 +91,23 @@ export default function UsersPage() {
   // Статистика
   const userStats = [
     {
-      title: "Total Users",
+      title: "Всего пользователей",
       value: users.length.toString(),
-      subtitle: "Registered users",
+      subtitle: "Зарегистрировано",
       icon: <Users className="w-6 h-6" />,
       color: "blue",
       trend: { isPositive: true, value: "12" },
     },
     {
-      title: "Active Users",
+      title: "Активные пользователи",
       value: users.filter((u) => u.stats?.currentStreak > 0).length.toString(),
-      subtitle: "Currently active",
+      subtitle: "Сейчас активны",
       icon: <UserCheck className="w-6 h-6" />,
       color: "green",
       trend: { isPositive: true, value: "8" },
     },
     {
-      title: "New Users",
+      title: "Новые пользователи",
       value: users
         .filter((u) => {
           const weekAgo = new Date();
@@ -115,7 +115,7 @@ export default function UsersPage() {
           return new Date(u.createdAt) > weekAgo;
         })
         .length.toString(),
-      subtitle: "This week",
+      subtitle: "За эту неделю",
       icon: <TrendingUp className="w-6 h-6" />,
       color: "purple",
       trend: { isPositive: true, value: "24" },
@@ -148,12 +148,12 @@ export default function UsersPage() {
     }
 
     const headers = [
-      "User",
-      "Contact",
-      "Role",
-      "Join Date",
-      "Status",
-      "Actions",
+      "Пользователь",
+      "Контакты",
+      "Роль",
+      "Дата регистрации",
+      "Статус",
+      "Действия",
     ];
 
     const data = filteredUsers.map((user) => [
@@ -203,10 +203,10 @@ export default function UsersPage() {
         className="flex items-center text-sm text-gray-600"
       >
         <Calendar className="w-4 h-4 mr-2" />
-        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Н/Д'}
       </div>,
       <div key={`status-${user.id}`} className="flex items-center">
-        <StatusBadge status={user.stats?.currentStreak > 0 ? "Active" : "Inactive"} />
+        <StatusBadge status={user.stats?.currentStreak > 0 ? "Активен" : "Неактивен"} />
         <div className="ml-2">
           {user.isPublic ? (
             <Eye className="w-4 h-4 text-green-500" />
@@ -267,7 +267,7 @@ export default function UsersPage() {
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading users...</p>
+          <p className="text-gray-600">Загрузка пользователей...</p>
         </div>
       </div>
     );
@@ -280,10 +280,10 @@ export default function UsersPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <Users className="w-8 h-8 mr-3" />
-            User Management
+            Управление пользователями
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage and monitor all users in the system
+            Управление и мониторинг всех пользователей системы
           </p>
         </div>
         <ActionButton
@@ -297,7 +297,7 @@ export default function UsersPage() {
           showLabels={true}
         >
           <Plus className="w-4 h-4 mr-2" />
-          Add New User
+          Добавить пользователя
         </ActionButton>
       </div>
 
@@ -325,14 +325,14 @@ export default function UsersPage() {
         <div className="mt-6">
           <div className="flex justify-between items-center mb-6">
             <div className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {users.length} users
+              Показано {filteredUsers.length} из {users.length} пользователей
             </div>
             <div className="flex space-x-3">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Поиск пользователей..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
@@ -351,12 +351,12 @@ export default function UsersPage() {
               <div className="text-center py-12">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <div className="text-lg font-medium text-gray-900 mb-2">
-                  No users found
+                  Пользователи не найдены
                 </div>
                 <div className="text-gray-500 mb-4">
                   {searchTerm
-                    ? "Try adjusting your search terms"
-                    : "Get started by creating your first user"}
+                    ? "Попробуйте изменить условия поиска"
+                    : "Начните с создания первого пользователя"}
                 </div>
                 {!searchTerm && (
                   <ActionButton
@@ -367,7 +367,7 @@ export default function UsersPage() {
                     showLabels={true}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add New User
+                    Добавить пользователя
                   </ActionButton>
                 )}
               </div>
@@ -378,8 +378,8 @@ export default function UsersPage() {
           {filteredUsers.length > 0 && (
             <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                Showing 1 to {Math.min(filteredUsers.length, 10)} of{" "}
-                {filteredUsers.length} results
+                Показано с 1 по {Math.min(filteredUsers.length, 10)} из{" "}
+                {filteredUsers.length} результатов
               </div>
               <div className="flex space-x-2">
                 <ActionButton
@@ -389,7 +389,7 @@ export default function UsersPage() {
                   size="sm"
                   showLabels={true}
                 >
-                  Previous
+                  Назад
                 </ActionButton>
                 <ActionButton
                   type="button"
@@ -416,7 +416,7 @@ export default function UsersPage() {
                   size="sm"
                   showLabels={true}
                 >
-                  Next
+                  Вперед
                 </ActionButton>
               </div>
             </div>
@@ -452,7 +452,7 @@ export default function UsersPage() {
           setUserToDelete(null);
         }}
         onConfirm={handleDeleteUser}
-        title="Delete User"
+        title="Удалить пользователя"
         message={
           <div className="text-center">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -461,16 +461,15 @@ export default function UsersPage() {
               </svg>
             </div>
             <div className="text-gray-600 mb-2">
-              Are you sure you want to delete{" "}
+              Вы уверены, что хотите удалить{" "}
               <strong>{userToDelete?.username || userToDelete?.email}</strong>?
             </div>
             <div className="text-sm text-gray-500">
-              This action cannot be undone and all user data will be permanently
-              removed.
+              Это действие нельзя отменить, и все данные пользователя будут удалены безвозвратно.
             </div>
           </div>
         }
-        confirmLabel="Delete User"
+        confirmLabel="Удалить пользователя"
         variant="delete"
       />
     </div>
