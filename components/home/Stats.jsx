@@ -20,15 +20,15 @@ export default function Stats() {
     ];
 
     return (
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-light-bg">
             <div className="max-w-7xl mx-auto px-4">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                     {stats.map((stat, index) => (
                         <div key={index} className="text-center">
-                            <div className="text-4xl lg:text-5xl font-bold text-gray-900 mb-3">
+                            <div className="text-4xl lg:text-5xl font-bold text-light-text-primary mb-3">
                                 {stat.number}
                             </div>
-                            <div className="text-gray-600 text-sm lg:text-base">
+                            <div className="text-light-text-secondary text-sm lg:text-base">
                                 {stat.description}
                             </div>
                         </div>

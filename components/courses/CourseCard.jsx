@@ -1,23 +1,42 @@
 // components/courses/CourseCard.jsx
-import { Star, Users, BookOpen, Award } from 'lucide-react'
-import Link from 'next/link'
+'use client';
+
+import { Star, Users, BookOpen, Award, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function CourseCard({ course }) {
+    const router = useRouter();
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat('ru-RU', {
             style: 'currency',
             currency: 'RUB',
             minimumFractionDigits: 0,
-        }).format(price)
-    }
+        }).format(price);
+    };
+
+    const handleCardClick = (e) => {
+        // Предотвращаем переход при клике на кнопку "Подробнее"
+        if (!e.target.closest('a, button')) {
+            router.push(`/courses/${course.id}`);
+        }
+    };
+
+    const handleDetailsClick = (e) => {
+        e.stopPropagation(); // Останавливаем всплытие события
+        router.push(`/courses/${course.id}`);
+    };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+        <div
+            onClick={handleCardClick}
+            className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-blue-200 group"
+        >
             <div className="relative">
                 {/* Картинка курса */}
-                <div className="h-48 bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+                <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
                     <div className="text-center">
-                        <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-2" />
+                        <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
                         <span className="text-lg font-semibold text-gray-800">{course.category}</span>
                     </div>
                 </div>
@@ -28,19 +47,43 @@ export default function CourseCard({ course }) {
                         Популярный
                     </div>
                 )}
+
+                {/* Бейдж скидки */}
+                {course.discountPrice && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        -{Math.round((1 - course.discountPrice / course.price) * 100)}%
+                    </div>
+                )}
             </div>
 
             <div className="p-6">
                 {/* Заголовок и рейтинг */}
                 <div className="mb-4">
-                    <h3 className="font-bold text-lg mb-2 line-clamp-2">{course.title}</h3>
+                    <h3 className="font-bold text-xl mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                        {course.title}
+                    </h3>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-semibold">{course.rating}</span>
-                            <span className="text-gray-500 text-sm">({course.students})</span>
+                            <span className="font-semibold ml-1">{course.rating}</span>
+                            <span className="text-gray-500 text-sm">({course.reviews || course.students})</span>
                         </div>
-                        <span className="font-bold text-blue-600">{formatPrice(course.price)}</span>
+                        <div className="flex flex-col items-end">
+                            {course.discountPrice ? (
+                                <>
+                                    <span className="font-bold text-lg text-red-600">
+                                        {formatPrice(course.discountPrice)}
+                                    </span>
+                                    <span className="text-gray-400 text-sm line-through">
+                                        {formatPrice(course.price)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="font-bold text-lg text-blue-600">
+                                    {formatPrice(course.price)}
+                                </span>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -53,7 +96,7 @@ export default function CourseCard({ course }) {
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
                     <div className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        <span>{course.students} студентов</span>
+                        <span>{course.students.toLocaleString()} студентов</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <BookOpen className="w-4 h-4" />
@@ -62,19 +105,35 @@ export default function CourseCard({ course }) {
                 </div>
 
                 {/* Инструктор и кнопка */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm text-gray-500">Инструктор</p>
-                        <p className="font-medium">{course.instructor}</p>
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Users className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-500">Инструктор</p>
+                            <p className="font-medium text-sm">{course.instructor}</p>
+                        </div>
                     </div>
-                    <Link
-                        href={`/courses/${course.id}`}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+                    <button
+                        onClick={handleDetailsClick}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition group/btn"
                     >
                         Подробнее
-                    </Link>
+                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                    </button>
                 </div>
             </div>
+
+            {/* Сертификат бейдж */}
+            {course.hasCertificate && (
+                <div className="px-6 pb-6">
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                        <Award className="w-4 h-4" />
+                        <span>Выдаётся сертификат</span>
+                    </div>
+                </div>
+            )}
         </div>
-    )
+    );
 }

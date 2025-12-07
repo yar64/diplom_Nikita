@@ -1,168 +1,143 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  firstName String?
-  lastName  String?
-  avatar    String?
-  bio       String?
-  timezone  String?  @default("UTC")
-  dailyGoal Int?     @default(30)
-  isPublic  Boolean  @default(false)
-  role      UserRole @default(USER)
-
-  // Relations
-  skills               UserSkill[]
-  projects             Project[]
-  learningPaths        LearningPath[]
-  sessions             StudySession[]
-  goals                Goal[]
-  stats                UserStats?
-  givenReviews         Review[]          @relation("GivenReviews")
-  receivedReviews      Review[]          @relation("ReceivedReviews")
-  notifications        Notification[]
+  id                   String                    @id @default(cuid())
+  email                String                    @unique
+  username             String                    @unique
+  password             String
+  firstName            String?
+  lastName             String?
+  avatar               String?
+  bio                  String?
+  timezone             String?                   @default("UTC")
+  dailyGoal            Int?                      @default(30)
+  isPublic             Boolean                   @default(false)
+  role                 UserRole                  @default(USER)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  auditLogs            AuditLog[]
   communityMemberships CommunityMember[]
   communityPosts       CommunityPost[]
-  
-  // Новые связи для настроек
-  settings             UserSettings?
-  notificationSettings UserNotificationSettings?
-  privacySettings      UserPrivacySettings?
+  goals                Goal[]
+  learningPaths        LearningPath[]
+  notifications        Notification[]
+  projects             Project[]
+  receivedReviews      Review[]                  @relation("ReceivedReviews")
+  givenReviews         Review[]                  @relation("GivenReviews")
+  sessions             StudySession[]
   appearanceSettings   UserAppearanceSettings?
   learningPreferences  UserLearningPreferences?
+  notificationSettings UserNotificationSettings?
+  privacySettings      UserPrivacySettings?
   securitySettings     UserSecuritySettings?
-  
-  // Новая связь для аудита
-  auditLogs            AuditLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  settings             UserSettings?
+  skills               UserSkill[]
+  stats                UserStats?
 
   @@map("users")
 }
 
 model Skill {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  description String?
-  category    String
-  icon        String?
-  difficulty  Difficulty @default(BEGINNER)
-
-  // Relations
-  userSkills        UserSkill[]
-  projectSkills     ProjectSkill[]
-  learningResources LearningResource[]
-  milestones        LearningMilestone[]
+  id                String              @id @default(cuid())
+  name              String              @unique
+  description       String?
+  category          String
+  icon              String?
+  difficulty        Difficulty          @default(BEGINNER)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
   goals             Goal[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  milestones        LearningMilestone[]
+  learningResources LearningResource[]
+  projectSkills     ProjectSkill[]
+  userSkills        UserSkill[]
 
   @@map("skills")
 }
 
 model UserSkill {
-  id         String      @id @default(cuid())
+  id         String         @id @default(cuid())
   userId     String
   skillId    String
-  level      SkillLevel  @default(NOVICE)
-  experience Int         @default(0)
-  isLearning Boolean     @default(true)
+  level      SkillLevel     @default(NOVICE)
+  experience Int            @default(0)
+  isLearning Boolean        @default(true)
   goalLevel  SkillLevel?
   goalDate   DateTime?
-  progress   Float       @default(0)
-
-  // Relations
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill    Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
-  sessions StudySession[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  progress   Float          @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  sessions   StudySession[]
+  skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, skillId])
   @@map("user_skills")
 }
 
 model Project {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   title       String
   description String?
   repository  String?
   demoUrl     String?
-  status      ProjectStatus @default(IN_PROGRESS)
+  status      ProjectStatus  @default(IN_PROGRESS)
   userId      String
-
-  // Relations
-  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skills ProjectSkill[]
-
-  startDate DateTime?
-  endDate   DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  skills      ProjectSkill[]
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("projects")
 }
 
 model ProjectSkill {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   projectId String
   skillId   String
-
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, skillId])
   @@map("project_skills")
 }
 
 model LearningPath {
-  id          String  @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
   description String?
-  isPublic    Boolean @default(false)
+  isPublic    Boolean             @default(false)
   userId      String
-
-  // Relations
-  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  milestones LearningMilestone[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  milestones  LearningMilestone[]
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("learning_paths")
 }
 
 model LearningMilestone {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   title          String
   description    String?
   order          Int
-  isCompleted    Boolean   @default(false)
+  isCompleted    Boolean      @default(false)
   completedAt    DateTime?
   learningPathId String
   skillId        String
-
-  // Relations
-  learningPath LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
-  skill        Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  skill          Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  learningPath   LearningPath @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
 
   @@map("learning_milestones")
 }
@@ -176,13 +151,10 @@ model StudySession {
   efficiency  Int?
   userId      String
   userSkillId String
-
-  // Relations
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userSkill UserSkill @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userSkill   UserSkill   @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("study_sessions")
 }
@@ -196,13 +168,10 @@ model Goal {
   completedAt DateTime?
   userId      String
   skillId     String
-
-  // Relations
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("goals")
 }
@@ -217,81 +186,66 @@ model LearningResource {
   duration    Int?
   rating      Float?
   skillId     String
-
-  // Relations
-  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  skill       Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@map("learning_resources")
 }
 
 model Review {
-  id         String @id @default(cuid())
+  id         String   @id @default(cuid())
   title      String
   content    String
   rating     Int
   reviewerId String
   revieweeId String
-
-  // Relations
-  reviewer User @relation("GivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
-  reviewee User @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  reviewee   User     @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reviewer   User     @relation("GivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
 
   @@map("reviews")
 }
 
 model Notification {
-  id      String           @id @default(cuid())
-  title   String
-  message String
-  type    NotificationType
-  isRead  Boolean          @default(false)
-  userId  String
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  userId    String
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model UserStats {
-  id              String @id @default(cuid())
-  userId          String @unique
-  totalStudyTime  Int    @default(0)
-  completedGoals  Int    @default(0)
-  skillsLearned   Int    @default(0)
-  currentStreak   Int    @default(0)
-  longestStreak   Int    @default(0)
-  weeklyProgress  Float  @default(0)
-  monthlyProgress Float  @default(0)
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  totalStudyTime  Int      @default(0)
+  completedGoals  Int      @default(0)
+  skillsLearned   Int      @default(0)
+  currentStreak   Int      @default(0)
+  longestStreak   Int      @default(0)
+  weeklyProgress  Float    @default(0)
+  monthlyProgress Float    @default(0)
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stats")
 }
 
 model Community {
-  id          String  @id @default(cuid())
-  name        String  @unique
+  id          String            @id @default(cuid())
+  name        String            @unique
   description String?
-  isPublic    Boolean @default(true)
+  isPublic    Boolean           @default(true)
   avatar      String?
-
-  // Relations
-  members CommunityMember[]
-  posts   CommunityPost[]
-
-  createdAt DateTime @default(now())
+  createdAt   DateTime          @default(now())
+  members     CommunityMember[]
+  posts       CommunityPost[]
 
   @@map("communities")
 }
@@ -301,251 +255,201 @@ model CommunityMember {
   communityId String
   userId      String
   role        CommunityRole @default(MEMBER)
-
-  // Relations
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community   Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   @@unique([communityId, userId])
   @@map("community_members")
 }
 
 model CommunityPost {
-  id          String @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   content     String
   communityId String
   authorId    String
-
-  // Relations
-  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   @@map("community_posts")
 }
 
-// Новые модели для настроек
 model UserSettings {
-  id                    String          @id @default(cuid())
-  userId                String          @unique
-  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Основные настройки
+  id                    String       @id @default(cuid())
+  userId                String       @unique
   email                 String?
   phone                 String?
   location              String?
   website               String?
   company               String?
   occupation            String?
-  
-  // Настройки уведомлений
-  emailNotifications    Boolean         @default(true)
-  pushNotifications     Boolean         @default(true)
-  goalReminders         Boolean         @default(true)
-  weeklyReports         Boolean         @default(true)
-  mentorNotifications   Boolean         @default(true)
-  communityUpdates      Boolean         @default(true)
-  
-  // Настройки обучения
-  defaultDifficulty     Difficulty      @default(BEGINNER)
-  preferredResourceType ResourceType    @default(VIDEO)
-  autoGenerateGoals     Boolean         @default(false)
-  studyReminders        Boolean         @default(true)
-  reminderTime          String?         @default("20:00")
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  emailNotifications    Boolean      @default(true)
+  pushNotifications     Boolean      @default(true)
+  goalReminders         Boolean      @default(true)
+  weeklyReports         Boolean      @default(true)
+  mentorNotifications   Boolean      @default(true)
+  communityUpdates      Boolean      @default(true)
+  defaultDifficulty     Difficulty   @default(BEGINNER)
+  preferredResourceType ResourceType @default(VIDEO)
+  autoGenerateGoals     Boolean      @default(false)
+  studyReminders        Boolean      @default(true)
+  reminderTime          String?      @default("20:00")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
 }
 
 model UserNotificationSettings {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Частоты уведомлений
-  emailFrequency    Frequency @default(DAILY)
-  digestFrequency   Frequency @default(WEEKLY)
-  
-  // Типы уведомлений
-  notifyNewMessages Boolean @default(true)
-  notifyGoalDue     Boolean @default(true)
-  notifyMentions    Boolean @default(true)
-  notifySkillSuggestions Boolean @default(true)
-  notifyCommunityActivity Boolean @default(false)
-  notifyStudyReminders Boolean @default(true)
-  notifyProgressUpdates Boolean @default(true)
-  
-  // Время отправки
-  quietHoursStart   String? @default("22:00")
-  quietHoursEnd     String? @default("08:00")
-  preferredSendTime String? @default("18:00")
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  emailFrequency          Frequency @default(DAILY)
+  digestFrequency         Frequency @default(WEEKLY)
+  notifyNewMessages       Boolean   @default(true)
+  notifyGoalDue           Boolean   @default(true)
+  notifyMentions          Boolean   @default(true)
+  notifySkillSuggestions  Boolean   @default(true)
+  notifyCommunityActivity Boolean   @default(false)
+  notifyStudyReminders    Boolean   @default(true)
+  notifyProgressUpdates   Boolean   @default(true)
+  quietHoursStart         String?   @default("22:00")
+  quietHoursEnd           String?   @default("08:00")
+  preferredSendTime       String?   @default("18:00")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_notification_settings")
 }
 
 model UserPrivacySettings {
-  id                    String            @id @default(cuid())
-  userId                String            @unique
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Видимость профиля
-  profileVisibility     ProfileVisibility @default(PUBLIC)
-  showEmail             Boolean           @default(false)
-  showRealName          Boolean           @default(false)
-  showLocation          Boolean           @default(false)
-  showOccupation        Boolean           @default(false)
-  
-  // Видимость активности
-  showStudySessions     Boolean           @default(true)
-  showCurrentProjects   Boolean           @default(true)
-  showSkillLevels       Boolean           @default(true)
-  showLearningPaths     Boolean           @default(true)
-  showAchievements      Boolean           @default(true)
-  showGoals             Boolean           @default(true)
-  showStats             Boolean           @default(true)
-  
-  // Контроль данных
-  dataSharing           Boolean           @default(false)
-  analyticsTracking     Boolean           @default(true)
-  personalizedAds       Boolean           @default(false)
-  marketingEmails       Boolean           @default(false)
-  
-  // Блокировки (используем JSON для SQLite)
-  blockedUsers          Json?             // Array of user IDs as JSON
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String            @id @default(cuid())
+  userId              String            @unique
+  profileVisibility   ProfileVisibility @default(PUBLIC)
+  showEmail           Boolean           @default(false)
+  showRealName        Boolean           @default(false)
+  showLocation        Boolean           @default(false)
+  showOccupation      Boolean           @default(false)
+  showStudySessions   Boolean           @default(true)
+  showCurrentProjects Boolean           @default(true)
+  showSkillLevels     Boolean           @default(true)
+  showLearningPaths   Boolean           @default(true)
+  showAchievements    Boolean           @default(true)
+  showGoals           Boolean           @default(true)
+  showStats           Boolean           @default(true)
+  dataSharing         Boolean           @default(false)
+  analyticsTracking   Boolean           @default(true)
+  personalizedAds     Boolean           @default(false)
+  marketingEmails     Boolean           @default(false)
+  blockedUsers        Json?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_privacy_settings")
 }
 
 model UserAppearanceSettings {
-  id             String @id @default(cuid())
-  userId         String @unique
-  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  theme          Theme  @default(LIGHT)
-  accentColor    String @default("blue")
-  fontSize       FontSize @default(MEDIUM)
-  reducedMotion  Boolean @default(false)
-  highContrast   Boolean @default(false)
-  sidebarCollapsed Boolean @default(false)
-  showAvatars    Boolean @default(true)
-  compactView    Boolean @default(false)
-  denseTables    Boolean @default(false)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  theme            Theme    @default(LIGHT)
+  accentColor      String   @default("blue")
+  fontSize         FontSize @default(MEDIUM)
+  reducedMotion    Boolean  @default(false)
+  highContrast     Boolean  @default(false)
+  sidebarCollapsed Boolean  @default(false)
+  showAvatars      Boolean  @default(true)
+  compactView      Boolean  @default(false)
+  denseTables      Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_appearance_settings")
 }
 
 model UserLearningPreferences {
-  id                      String            @id @default(cuid())
-  userId                  String            @unique
-  user                    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Предпочтения обучения
-  learningStyle           LearningStyle     @default(VISUAL)
-  preferredDifficulty     Difficulty        @default(BEGINNER)
-  dailyStudyGoal          Int               @default(60)
-  weeklyStudyGoal         Int               @default(300)
-  maxSessionDuration      Int               @default(120)
-  
-  // Предпочтения контента (используем JSON для SQLite)
-  preferredResourceTypes  Json?             // Array of ResourceType as JSON
-  videoPlaybackSpeed      Float             @default(1.0)
-  autoPlayVideos          Boolean           @default(true)
-  showTranscripts         Boolean           @default(true)
-  enableSubtitles         Boolean           @default(false)
-  
-  // Настройки сессий
-  sessionReminders        Boolean           @default(true)
-  breakReminders          Boolean           @default(true)
-  sessionLength           Int               @default(25)
-  breakLength             Int               @default(5)
-  longBreakLength         Int               @default(15)
-  sessionsBeforeLongBreak Int               @default(4)
-  
-  // Цели и прогресс
-  autoGoalAdjustment      Boolean           @default(true)
-  showProgressCharts      Boolean           @default(true)
-  celebrateMilestones     Boolean           @default(true)
-  shareAchievements       Boolean           @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                      String        @id @default(cuid())
+  userId                  String        @unique
+  learningStyle           LearningStyle @default(VISUAL)
+  preferredDifficulty     Difficulty    @default(BEGINNER)
+  dailyStudyGoal          Int           @default(60)
+  weeklyStudyGoal         Int           @default(300)
+  maxSessionDuration      Int           @default(120)
+  preferredResourceTypes  Json?
+  videoPlaybackSpeed      Float         @default(1.0)
+  autoPlayVideos          Boolean       @default(true)
+  showTranscripts         Boolean       @default(true)
+  enableSubtitles         Boolean       @default(false)
+  sessionReminders        Boolean       @default(true)
+  breakReminders          Boolean       @default(true)
+  sessionLength           Int           @default(25)
+  breakLength             Int           @default(5)
+  longBreakLength         Int           @default(15)
+  sessionsBeforeLongBreak Int           @default(4)
+  autoGoalAdjustment      Boolean       @default(true)
+  showProgressCharts      Boolean       @default(true)
+  celebrateMilestones     Boolean       @default(true)
+  shareAchievements       Boolean       @default(true)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_learning_preferences")
 }
 
 model UserSecuritySettings {
-  id                    String    @id @default(cuid())
-  userId                String    @unique
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Безопасность аккаунта
-  twoFactorEnabled      Boolean   @default(false)
-  twoFactorSecret       String?
-  backupCodes           Json?     // Array of backup codes as JSON
-  lastPasswordChange    DateTime?
-  loginAlerts           Boolean   @default(true)
-  
-  // Сессии
-  currentSessions       Json?     // Active sessions data
-  trustedDevices        Json?     // Array of device IDs as JSON
-  
-  // Конфиденциальность
-  dataExportEnabled     Boolean   @default(true)
-  accountDeletionDate   DateTime? // Scheduled deletion date
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  twoFactorEnabled    Boolean   @default(false)
+  twoFactorSecret     String?
+  backupCodes         Json?
+  lastPasswordChange  DateTime?
+  loginAlerts         Boolean   @default(true)
+  currentSessions     Json?
+  trustedDevices      Json?
+  dataExportEnabled   Boolean   @default(true)
+  accountDeletionDate DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_security_settings")
 }
 
 model SystemSettings {
-  id          String           @id @default(cuid())
-  key         String           @unique
+  id          String          @id @default(cuid())
+  key         String          @unique
   value       String
   description String?
   category    SettingCategory
-  isPublic    Boolean          @default(false)
-  dataType    SettingDataType  @default(STRING)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isPublic    Boolean         @default(false)
+  dataType    SettingDataType @default(STRING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@map("system_settings")
 }
 
 model AuditLog {
-  id          String        @id @default(cuid())
-  action      String
-  resource    String?
-  resourceId  String?
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  action     String
+  resource   String?
+  resourceId String?
+  userId     String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("audit_logs")
 }
 
-// Существующие енумы
 enum UserRole {
   USER
   ADMIN
@@ -614,7 +518,6 @@ enum CommunityRole {
   ADMIN
 }
 
-// Новые енумы для настроек
 enum ProfileVisibility {
   PUBLIC
   PRIVATE

@@ -5,7 +5,6 @@ import { useState } from 'react'
 import { Filter, Star, ChevronDown, Search } from 'lucide-react'
 import CourseFilter from './CourseFilter'
 import CourseCard from './CourseCard'
-import Instructors from '../home/Instructors'
 
 export default function CoursesPage() {
     const [filters, setFilters] = useState({
@@ -126,9 +125,9 @@ export default function CoursesPage() {
     })
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-light-accent">
             {/* Заголовок */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-12">
+            <div className="bg-blue-600 text-white py-12">
                 <div className="max-w-7xl mx-auto px-4">
                     <h1 className="text-4xl font-bold mb-4">Все курсы</h1>
                     <p className="text-lg text-blue-100">
@@ -201,7 +200,7 @@ export default function CoursesPage() {
                         {/* Кнопка "Показать еще" */}
                         {filteredCourses.length > 6 && (
                             <div className="text-center mt-8">
-                                <button className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-800 transition">
+                                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-800 transition">
                                     Показать еще
                                 </button>
                             </div>

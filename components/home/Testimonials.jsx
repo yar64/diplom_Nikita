@@ -1,7 +1,6 @@
 // components/home/Testimonials.jsx
 import Image from 'next/image';
 
-
 export default function Testimonials() {
     const testimonials = [
         {
@@ -37,14 +36,14 @@ export default function Testimonials() {
     ];
 
     return (
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-light-bg">
             <div className="max-w-7xl mx-auto px-4">
                 {/* Заголовок секции */}
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                    <h2 className="text-3xl font-bold text-light-text-primary mb-4">
                         Что говорят наши студенты
                     </h2>
-                    <p className="text-xl text-gray-600">
+                    <p className="text-xl text-light-text-secondary">
                         О нас
                     </p>
                 </div>
@@ -54,7 +53,7 @@ export default function Testimonials() {
                     {testimonials.map((testimonial) => (
                         <div
                             key={testimonial.id}
-                            className="flex-shrink-0 w-[500px] bg-white rounded-xl p-8 shadow-lg border border-gray-200"
+                            className="flex-shrink-0 w-[500px] bg-light-card rounded-xl p-8 shadow-lg border border-light-border"
                         >
                             {/* Кавычка */}
                             <div className="mb-6">
@@ -67,12 +66,12 @@ export default function Testimonials() {
                             </div>
 
                             {/* Текст отзыва */}
-                            <p className="text-lg text-black  leading-relaxed">
+                            <p className="text-lg text-light-text-primary leading-relaxed">
                                 {testimonial.text}
                             </p>
 
                             {/* Автор с аватаркой */}
-                            <div className="border-t border-gray-100 pt-2">
+                            <div className="border-t border-light-border pt-2">
                                 <div className="flex items-center space-x-4">
                                     {/* Аватарка */}
                                     <Image
@@ -83,10 +82,10 @@ export default function Testimonials() {
                                         className="rounded-full"
                                     />
                                     <div>
-                                        <div className="font-semibold text-gray-900 text-lg">
+                                        <div className="font-semibold text-light-text-primary text-lg">
                                             {testimonial.author}
                                         </div>
-                                        <div className="text-gray-600">
+                                        <div className="text-light-text-secondary">
                                             {testimonial.position}
                                         </div>
                                     </div>
@@ -101,7 +100,7 @@ export default function Testimonials() {
                     {testimonials.slice(0, 3).map((_, index) => (
                         <button
                             key={index}
-                            className="w-2 h-2 rounded-full bg-gray-300 hover:bg-gray-400 transition"
+                            className="w-2 h-2 rounded-full bg-light-border hover:bg-light-text-secondary transition"
                         />
                     ))}
                 </div>
