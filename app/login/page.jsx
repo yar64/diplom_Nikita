@@ -8,14 +8,15 @@ import {
     Lock,
     Eye,
     EyeOff,
-    Facebook,
-    Mail as MicrosoftIcon,
     ArrowRight,
     User
 } from 'lucide-react';
+import { loginUser } from '../../server/user.actions';
+import { useAuth } from '../../contexts/AuthContext'; // ← ИМПОРТ КОНТЕКСТА
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login } = useAuth(); // ← получаем функцию login из контекста
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -36,41 +37,43 @@ export default function LoginPage() {
         }
     };
 
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email или имя пользователя обязательно';
-        }
-        if (!formData.password) {
-            newErrors.password = 'Пароль обязателен';
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) return;
+        if (!formData.email.trim()) {
+            setErrors({ email: 'Email или имя пользователя обязательно' });
+            return;
+        }
+        if (!formData.password) {
+            setErrors({ password: 'Пароль обязателен' });
+            return;
+        }
 
         setIsLoading(true);
 
         try {
-            // Заглушка для демонстрации
-            console.log('Вход пользователя:', formData);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const result = await loginUser(formData);
 
-            // Сохраняем в localStorage для простоты
-            localStorage.setItem('user', JSON.stringify({
-                email: formData.email,
-                username: formData.email.split('@')[0] || 'user',
-                firstName: 'Тестовый',
-                lastName: 'Пользователь'
-            }));
+            if (result.success) {
+                // ИСПРАВЛЯЕМ: используем login из контекста вместо localStorage.setItem
+                login({
+                    id: result.user.id,
+                    email: result.user.email,
+                    username: result.user.username,
+                    firstName: result.user.firstName,
+                    lastName: result.user.lastName,
+                    role: result.user.role
+                });
 
-            router.push('/dashboard');
+                // Перенаправляем на профиль
+                router.push('/profile');
+            } else {
+                setErrors({
+                    submit: result.error || 'Неверный email или пароль'
+                });
+            }
         } catch (error) {
-            setErrors({ submit: 'Ошибка входа. Попробуйте снова.' });
+            setErrors({ submit: 'Ошибка сети. Попробуйте снова.' });
         } finally {
             setIsLoading(false);
         }
@@ -218,7 +221,7 @@ export default function LoginPage() {
 
                             <button
                                 type="button"
-                                className="w-full py-3 px-4 border border-gray-300 bg-gray-300 rounded-lg hover:bg-blue-500 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 px-4 border border-gray-300 bg-gray-300 rounded-lg hover:bg-blue-400 transition-all flex items-center justify-center gap-2"
                             >
                                 <img src="/telegram-logo.svg" alt="Telegram" className="w-6 h-6" />
                                 <span className="text-sm font-medium">Telegram</span>

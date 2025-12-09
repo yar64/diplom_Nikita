@@ -14,9 +14,12 @@ import {
     ArrowRight,
     Check
 } from 'lucide-react';
+import { registerUser } from '../../server/user.actions';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { login } = useAuth(); // ← получаем функцию login из контекста
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -72,21 +75,34 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            // Заглушка для демонстрации
-            console.log('Регистрация пользователя:', formData);
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // В учебном проекте просто сохраняем в localStorage
-            localStorage.setItem('user', JSON.stringify({
+            const result = await registerUser({
                 email: formData.email,
                 username: formData.username,
+                password: formData.password,
                 firstName: formData.firstName,
                 lastName: formData.lastName
-            }));
+            });
 
-            router.push('/dashboard');
+            if (result.success) {
+                // ИСПРАВЛЯЕМ: используем login из контекста вместо localStorage.setItem
+                login({
+                    id: result.user.id,
+                    email: result.user.email,
+                    username: result.user.username,
+                    firstName: result.user.firstName,
+                    lastName: result.user.lastName,
+                    role: result.user.role
+                });
+
+                // Перенаправляем на страницу профиля
+                router.push('/profile');
+            } else {
+                setErrors({
+                    submit: result.error || 'Ошибка регистрации. Попробуйте снова.'
+                });
+            }
         } catch (error) {
-            setErrors({ submit: 'Ошибка регистрации. Попробуйте снова.' });
+            setErrors({ submit: 'Ошибка сети. Попробуйте снова.' });
         } finally {
             setIsLoading(false);
         }
@@ -306,7 +322,7 @@ export default function RegisterPage() {
 
                             <button
                                 type="button"
-                                className="w-full py-3 px-4 border border-gray-300 bg-gray-300 rounded-lg hover:bg-blue-500 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 px-4 border border-gray-300 bg-gray-300 rounded-lg hover:bg-blue-400 transition-all flex items-center justify-center gap-2"
                             >
                                 <img src="/telegram-logo.svg" alt="Telegram" className="w-6 h-6" />
                                 <span className="text-sm font-medium">Telegram</span>

@@ -1,6 +1,7 @@
 // app/layout.js
 'use client';
 import { usePathname } from 'next/navigation';
+import { AuthProvider } from '../contexts/AuthContext';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import './globals.css';
@@ -16,15 +17,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru">
       <body>
-        {/* Показываем Header ТОЛЬКО на обычных страницах */}
-        {!isAdminPage && <Header />}
+        {/* ОБЕРТЫВАЕМ В AuthProvider */}
+        <AuthProvider>
+          {!isAdminPage && <Header />}
 
-        <main>
-          {children}
-        </main>
+          <main>
+            {children}
+          </main>
 
-        {/* Показываем Footer ТОЛЬКО на обычных страницах */}
-        {!isAdminPage && !isAuthPage && <Footer />}
+          {/* Показываем Footer ТОЛЬКО на обычных страницах */}
+          {!isAdminPage && !isAuthPage && <Footer />}
+        </AuthProvider>
       </body>
     </html>
   );

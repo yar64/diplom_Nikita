@@ -129,7 +129,7 @@ export default function Footer() {
                                     href="https://telegram.org"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-gray-400 hover:bg-blue-500 p-1.5 rounded-lg transition-all duration-200"
+                                    className="bg-gray-400 hover:bg-blue-400 p-1.5 rounded-lg transition-all duration-200"
                                     aria-label="Telegram"
                                 >
                                     <img src="/telegram-logo.svg" alt="Telegram" className="w-8 h-8" />
