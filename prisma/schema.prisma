@@ -8,6 +8,7 @@ datasource db {
 }
 
 model User {
+<<<<<<< HEAD
   id                   String                    @id @default(cuid())
   email                String                    @unique
   username             String                    @unique
@@ -34,17 +35,62 @@ model User {
   receivedReviews      Review[]                  @relation("ReceivedReviews")
   givenReviews         Review[]                  @relation("GivenReviews")
   sessions             StudySession[]
+=======
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  avatar    String?
+  bio       String?
+  timezone  String?  @default("UTC")
+  dailyGoal Int?     @default(30)
+  isPublic  Boolean  @default(false)
+  role      UserRole @default(USER)
+
+  // Основные отношения
+  skills               UserSkill[]
+  projects             Project[]
+  learningPaths        LearningPath[]
+  sessions             StudySession[]
+  goals                Goal[]
+  stats                UserStats?
+  givenReviews         Review[]          @relation("GivenReviews")
+  receivedReviews      Review[]          @relation("ReceivedReviews")
+  notifications        Notification[]
+  communityMemberships CommunityMember[]
+  communityPosts       CommunityPost[]
+
+  // Настройки
+  settings             UserSettings?
+  notificationSettings UserNotificationSettings?
+  privacySettings      UserPrivacySettings?
+>>>>>>> bd68316 (добавление валидации данных)
   appearanceSettings   UserAppearanceSettings?
   learningPreferences  UserLearningPreferences?
   notificationSettings UserNotificationSettings?
   privacySettings      UserPrivacySettings?
   securitySettings     UserSecuritySettings?
+<<<<<<< HEAD
   settings             UserSettings?
   skills               UserSkill[]
   stats                UserStats?
   
   // Добавлено обратное отношение к Session
   authSessions         Session[]                 // <- добавлено это поле
+=======
+
+  // Новые функции
+  auditLogs    AuditLog[]
+  studyPlans   StudyPlan[]
+  quizAttempts QuizAttempt[]
+  badges       UserBadge[]
+  notes        StudyNote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("users")
 }
@@ -59,10 +105,19 @@ model Skill {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   goals             Goal[]
+<<<<<<< HEAD
   milestones        LearningMilestone[]
   learningResources LearningResource[]
   projectSkills     ProjectSkill[]
   userSkills        UserSkill[]
+=======
+  levelSystems      LevelSystem[]
+  quizzes           Quiz[]
+  goalSkills        GoalSkill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("skills")
 }
@@ -76,12 +131,26 @@ model UserSkill {
   isLearning Boolean        @default(true)
   goalLevel  SkillLevel?
   goalDate   DateTime?
+<<<<<<< HEAD
   progress   Float          @default(0)
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
   sessions   StudySession[]
   skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  progress   Float       @default(0)
+
+  // Relations
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  sessions   StudySession[]
+  notes      StudyNote[]
+  studyPlans StudyPlan[] // Добавлена обратная связь
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@unique([userId, skillId])
   @@map("user_skills")
@@ -151,6 +220,7 @@ model StudySession {
   id          String      @id @default(cuid())
   duration    Int
   description String?
+  notes       String?
   date        DateTime    @default(now())
   sessionType SessionType @default(PRACTICE)
   efficiency  Int?
@@ -172,13 +242,38 @@ model Goal {
   isCompleted Boolean   @default(false)
   completedAt DateTime?
   userId      String
+<<<<<<< HEAD
   skillId     String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  skillId     String?
+
+  // Relations
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill      Skill?      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  goalSkills GoalSkill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("goals")
+}
+
+model GoalSkill {
+  id          String      @id @default(cuid())
+  goalId      String
+  skillId     String
+  targetLevel SkillLevel?
+
+  goal  Goal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([goalId, skillId])
+  @@map("goal_skills")
 }
 
 model LearningResource {
@@ -227,6 +322,7 @@ model Notification {
 }
 
 model UserStats {
+<<<<<<< HEAD
   id              String   @id @default(cuid())
   userId          String   @unique
   totalStudyTime  Int      @default(0)
@@ -238,6 +334,24 @@ model UserStats {
   monthlyProgress Float    @default(0)
   updatedAt       DateTime @updatedAt
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  id              String @id @default(cuid())
+  userId          String @unique
+  totalStudyTime  Int    @default(0)
+  completedGoals  Int    @default(0)
+  skillsLearned   Int    @default(0)
+  currentStreak   Int    @default(0)
+  longestStreak   Int    @default(0)
+  weeklyProgress  Float  @default(0)
+  monthlyProgress Float  @default(0)
+  badgesEarned    Int    @default(0)
+  quizzesPassed   Int    @default(0)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_stats")
 }
@@ -281,6 +395,7 @@ model CommunityPost {
   @@map("community_posts")
 }
 
+<<<<<<< HEAD
 model UserSettings {
   id                    String       @id @default(cuid())
   userId                String       @unique
@@ -296,19 +411,165 @@ model UserSettings {
   weeklyReports         Boolean      @default(true)
   mentorNotifications   Boolean      @default(true)
   communityUpdates      Boolean      @default(true)
+=======
+// НОВЫЕ МОДЕЛИ ДЛЯ РАСШИРЕННОГО ФУНКЦИОНАЛА
+
+model LevelSystem {
+  id            String     @id @default(cuid())
+  skillId       String?
+  level         SkillLevel
+  minExperience Int
+  description   String?
+
+  skill Skill? @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, level])
+  @@map("level_systems")
+}
+
+model StudyPlan {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  isCompleted Boolean  @default(false)
+  userId      String
+  userSkillId String?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSkill UserSkill? @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("study_plans")
+}
+
+model Quiz {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  skillId     String
+  difficulty  Difficulty
+  questions   Json
+  passScore   Int        @default(70)
+  timeLimit   Int?
+  maxAttempts Int        @default(3)
+
+  skill        Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  quizAttempts QuizAttempt[] // Добавлена обратная связь
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quizzes")
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  quizId      String
+  userId      String
+  score       Int
+  passed      Boolean
+  answers     Json
+  timeSpent   Int?
+  completedAt DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_attempts")
+}
+
+model Badge {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String
+  icon        String
+  criteria    Json
+  category    BadgeCategory
+  rarity      Rarity        @default(COMMON)
+
+  userBadges UserBadge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model StudyNote {
+  id          String @id @default(cuid())
+  title       String
+  content     String
+  userId      String
+  userSkillId String
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSkill UserSkill @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("study_notes")
+}
+
+// МОДЕЛИ НАСТРОЕК
+
+model UserSettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email      String?
+  phone      String?
+  location   String?
+  website    String?
+  company    String?
+  occupation String?
+
+  emailNotifications  Boolean @default(true)
+  pushNotifications   Boolean @default(true)
+  goalReminders       Boolean @default(true)
+  weeklyReports       Boolean @default(true)
+  mentorNotifications Boolean @default(true)
+  communityUpdates    Boolean @default(true)
+
+>>>>>>> bd68316 (добавление валидации данных)
   defaultDifficulty     Difficulty   @default(BEGINNER)
   preferredResourceType ResourceType @default(VIDEO)
   autoGenerateGoals     Boolean      @default(false)
   studyReminders        Boolean      @default(true)
   reminderTime          String?      @default("20:00")
+<<<<<<< HEAD
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
   user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_settings")
 }
 
 model UserNotificationSettings {
+<<<<<<< HEAD
   id                      String    @id @default(cuid())
   userId                  String    @unique
   emailFrequency          Frequency @default(DAILY)
@@ -326,11 +587,35 @@ model UserNotificationSettings {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
   user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emailFrequency  Frequency @default(DAILY)
+  digestFrequency Frequency @default(WEEKLY)
+
+  notifyNewMessages       Boolean @default(true)
+  notifyGoalDue           Boolean @default(true)
+  notifyMentions          Boolean @default(true)
+  notifySkillSuggestions  Boolean @default(true)
+  notifyCommunityActivity Boolean @default(false)
+  notifyStudyReminders    Boolean @default(true)
+  notifyProgressUpdates   Boolean @default(true)
+
+  quietHoursStart   String? @default("22:00")
+  quietHoursEnd     String? @default("08:00")
+  preferredSendTime String? @default("18:00")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_notification_settings")
 }
 
 model UserPrivacySettings {
+<<<<<<< HEAD
   id                  String            @id @default(cuid())
   userId              String            @unique
   profileVisibility   ProfileVisibility @default(PUBLIC)
@@ -353,13 +638,49 @@ model UserPrivacySettings {
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  profileVisibility ProfileVisibility @default(PUBLIC)
+  showEmail         Boolean           @default(false)
+  showRealName      Boolean           @default(false)
+  showLocation      Boolean           @default(false)
+  showOccupation    Boolean           @default(false)
+
+  showStudySessions   Boolean @default(true)
+  showCurrentProjects Boolean @default(true)
+  showSkillLevels     Boolean @default(true)
+  showLearningPaths   Boolean @default(true)
+  showAchievements    Boolean @default(true)
+  showGoals           Boolean @default(true)
+  showStats           Boolean @default(true)
+
+  dataSharing       Boolean @default(false)
+  analyticsTracking Boolean @default(true)
+  personalizedAds   Boolean @default(false)
+  marketingEmails   Boolean @default(false)
+
+  blockedUsers Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_privacy_settings")
 }
 
 model UserAppearanceSettings {
+<<<<<<< HEAD
   id               String   @id @default(cuid())
   userId           String   @unique
+=======
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+>>>>>>> bd68316 (добавление валидации данных)
   theme            Theme    @default(LIGHT)
   accentColor      String   @default("blue")
   fontSize         FontSize @default(MEDIUM)
@@ -369,14 +690,21 @@ model UserAppearanceSettings {
   showAvatars      Boolean  @default(true)
   compactView      Boolean  @default(false)
   denseTables      Boolean  @default(false)
+<<<<<<< HEAD
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_appearance_settings")
 }
 
 model UserLearningPreferences {
+<<<<<<< HEAD
   id                      String        @id @default(cuid())
   userId                  String        @unique
   learningStyle           LearningStyle @default(VISUAL)
@@ -402,11 +730,45 @@ model UserLearningPreferences {
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
   user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  learningStyle       LearningStyle @default(VISUAL)
+  preferredDifficulty Difficulty    @default(BEGINNER)
+  dailyStudyGoal      Int           @default(60)
+  weeklyStudyGoal     Int           @default(300)
+  maxSessionDuration  Int           @default(120)
+
+  preferredResourceTypes Json?
+  videoPlaybackSpeed     Float   @default(1.0)
+  autoPlayVideos         Boolean @default(true)
+  showTranscripts        Boolean @default(true)
+  enableSubtitles        Boolean @default(false)
+
+  sessionReminders        Boolean @default(true)
+  breakReminders          Boolean @default(true)
+  sessionLength           Int     @default(25)
+  breakLength             Int     @default(5)
+  longBreakLength         Int     @default(15)
+  sessionsBeforeLongBreak Int     @default(4)
+
+  autoGoalAdjustment  Boolean @default(true)
+  showProgressCharts  Boolean @default(true)
+  celebrateMilestones Boolean @default(true)
+  shareAchievements   Boolean @default(true)
+  topicsOfInterest    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_learning_preferences")
 }
 
 model UserSecuritySettings {
+<<<<<<< HEAD
   id                  String    @id @default(cuid())
   userId              String    @unique
   twoFactorEnabled    Boolean   @default(false)
@@ -421,6 +783,26 @@ model UserSecuritySettings {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  twoFactorEnabled   Boolean   @default(false)
+  twoFactorSecret    String?
+  backupCodes        Json?
+  lastPasswordChange DateTime?
+  loginAlerts        Boolean   @default(true)
+
+  currentSessions Json?
+  trustedDevices  Json?
+
+  dataExportEnabled   Boolean   @default(true)
+  accountDeletionDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("user_security_settings")
 }
@@ -433,28 +815,48 @@ model SystemSettings {
   category    SettingCategory
   isPublic    Boolean         @default(false)
   dataType    SettingDataType @default(STRING)
+<<<<<<< HEAD
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+=======
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("system_settings")
 }
 
 model AuditLog {
+<<<<<<< HEAD
   id         String   @id @default(cuid())
+=======
+  id         String  @id @default(cuid())
+>>>>>>> bd68316 (добавление валидации данных)
   action     String
   resource   String?
   resourceId String?
   userId     String?
+<<<<<<< HEAD
+=======
+  user       User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+>>>>>>> bd68316 (добавление валидации данных)
   oldValues  Json?
   newValues  Json?
   ipAddress  String?
   userAgent  String?
+<<<<<<< HEAD
   createdAt  DateTime @default(now())
   user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+=======
+
+  createdAt DateTime @default(now())
+>>>>>>> bd68316 (добавление валидации данных)
 
   @@map("audit_logs")
 }
 
+<<<<<<< HEAD
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique
@@ -466,6 +868,9 @@ model Session {
   @@index([userId])
   @@index([token])
 }
+=======
+// ENUMS
+>>>>>>> bd68316 (добавление валидации данных)
 
 enum UserRole {
   USER
@@ -486,6 +891,7 @@ enum SkillLevel {
   COMPETENT
   PROFICIENT
   EXPERT
+  MASTER
 }
 
 enum ProjectStatus {
@@ -527,6 +933,8 @@ enum NotificationType {
   STREAK_REMINDER
   NEW_MESSAGE
   SYSTEM_ALERT
+  BADGE_EARNED
+  QUIZ_COMPLETED
 }
 
 enum CommunityRole {
@@ -588,3 +996,23 @@ enum SettingDataType {
   JSON
   ARRAY
 }
+<<<<<<< HEAD
+=======
+
+enum BadgeCategory {
+  LEARNING
+  COMMUNITY
+  ACHIEVEMENT
+  SKILL
+  TIME
+  SPECIAL
+}
+
+enum Rarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+>>>>>>> bd68316 (добавление валидации данных)

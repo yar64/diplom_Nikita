@@ -1,8 +1,85 @@
-// actions/admin.actions.js
+// actions/settings.actions.ts
 'use server'
 
 import { prisma } from '../prisma/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { 
+  validateWithSchema,
+  userSettingsSchema,
+  userLearningPreferencesSchema,
+  userNotificationSettingsSchema,
+  userPrivacySettingsSchema,
+  userAppearanceSettingsSchema,
+  userSecuritySettingsSchema
+} from '../libary/validations'
+import { z } from 'zod'
+
+// Создаем недостающие схемы валидации с альтернативным синтаксисом для старой версии Zod
+const updateUserRoleSchema = z.object({
+  userId: z.string().cuid('Некорректный ID пользователя'),
+  role: z.union([z.literal('USER'), z.literal('ADMIN'), z.literal('MENTOR')])
+})
+
+const systemSettingCreateSchema = z.object({
+  key: z.string().min(1, 'Ключ обязателен'),
+  value: z.string().min(1, 'Значение обязательно'),
+  description: z.string().optional(),
+  category: z.string().min(1, 'Категория обязательна'),
+  isPublic: z.boolean().optional(),
+  dataType: z.union([
+    z.literal('STRING'),
+    z.literal('NUMBER'), 
+    z.literal('BOOLEAN'),
+    z.literal('JSON')
+  ]).optional()
+})
+
+const systemSettingUpdateSchema = z.object({
+  key: z.string().min(1, 'Ключ обязателен'),
+  value: z.string().min(1, 'Значение обязательно')
+})
+
+const userSettingsUpdateSchema = z.object({
+  userId: z.string().cuid('Некорректный ID пользователя'),
+  settingsType: z.union([
+    z.literal('general'),
+    z.literal('notifications'),
+    z.literal('privacy'),
+    z.literal('appearance'),
+    z.literal('learning'),
+    z.literal('security')
+  ]),
+  data: z.record(z.any())
+})
+
+const cleanupDataSchema = z.object({
+  days: z.number().int().min(1).max(365).default(30)
+})
+
+const exportDataSchema = z.object({
+  format: z.union([z.literal('json'), z.literal('csv')]).default('json')
+})
+
+const paginationSchema = z.object({
+  page: z.number().int().min(1).default(1),
+  limit: z.number().int().min(1).max(100).default(50)
+})
+
+// Создаем схемы для конкретных типов настроек (без userId)
+const generalSettingsSchema = userSettingsSchema.omit({ userId: true }).partial()
+const notificationSettingsSchema = userNotificationSettingsSchema.omit({ userId: true }).partial()
+const privacySettingsSchema = userPrivacySettingsSchema.omit({ userId: true }).partial()
+const appearanceSettingsSchema = userAppearanceSettingsSchema.omit({ userId: true }).partial()
+const learningSettingsSchema = userLearningPreferencesSchema.omit({ userId: true }).partial()
+const securitySettingsSchema = userSecuritySettingsSchema.omit({ userId: true }).partial()
+
+// Вспомогательная функция для обработки ошибок валидации
+function getValidationErrors(validation: any): string {
+  if (!validation.success && 'errors' in validation) {
+    return validation.errors.join(', ')
+  }
+  return 'Validation failed'
+}
 
 // Получение статистики системы
 export async function getSystemStats() {
@@ -41,7 +118,7 @@ export async function getSystemStats() {
     const lastWeek = new Date()
     lastWeek.setDate(lastWeek.getDate() - 7)
     
-    const [recentSessions, newUsers] = await Promise.all([
+    const [recentSessions, newUsers, completedGoals] = await Promise.all([
       prisma.studySession.count({
         where: {
           createdAt: {
@@ -55,12 +132,33 @@ export async function getSystemStats() {
             gte: lastWeek
           }
         }
+      }),
+      prisma.goal.count({
+        where: {
+          isCompleted: true,
+          completedAt: {
+            gte: lastWeek
+          }
+        }
       })
     ])
 
     // Статистика по настройкам пользователей
-    const usersWithSettings = await prisma.userSettings.count()
-    const usersWithNotifications = await prisma.userNotificationSettings.count()
+    const [
+      usersWithSettings,
+      usersWithNotifications,
+      usersWithPrivacy,
+      usersWithAppearance,
+      usersWithLearning,
+      usersWithSecurity
+    ] = await Promise.all([
+      prisma.userSettings.count(),
+      prisma.userNotificationSettings.count(),
+      prisma.userPrivacySettings.count(),
+      prisma.userAppearanceSettings.count(),
+      prisma.userLearningPreferences.count(),
+      prisma.userSecuritySettings.count()
+    ])
 
     return {
       success: true,
@@ -75,10 +173,19 @@ export async function getSystemStats() {
         learningPaths: learningPathsCount,
         reviews: reviewsCount,
         usersByRole,
-        recentActivity: recentSessions,
-        newUsers,
-        usersWithSettings,
-        usersWithNotifications
+        recentActivity: {
+          sessions: recentSessions,
+          newUsers,
+          completedGoals
+        },
+        settings: {
+          general: usersWithSettings,
+          notifications: usersWithNotifications,
+          privacy: usersWithPrivacy,
+          appearance: usersWithAppearance,
+          learning: usersWithLearning,
+          security: usersWithSecurity
+        }
       }
     }
   } catch (error) {
@@ -105,7 +212,10 @@ export async function getUsers() {
         stats: true,
         settings: true,
         notificationSettings: true,
-        privacySettings: true
+        privacySettings: true,
+        appearanceSettings: true,
+        learningPreferences: true,
+        securitySettings: true
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -116,8 +226,17 @@ export async function getUsers() {
   }
 }
 
-export async function updateUserRole(userId, role) {
+export async function updateUserRole(userId: string, role: 'USER' | 'ADMIN' | 'MENTOR') {
   try {
+    // Валидация данных с использованием схемы
+    const validation = validateWithSchema(updateUserRoleSchema, { userId, role })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: { role },
@@ -127,28 +246,71 @@ export async function updateUserRole(userId, role) {
         username: true,
         firstName: true,
         lastName: true,
-        role: true
+        role: true,
+        avatar: true
       }
     })
+    
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_ROLE_UPDATED',
+        resource: 'user',
+        resourceId: userId,
+        userId: 'system',
+        newValues: { role }
+      }
+    })
+
     revalidatePath('/admin')
-    revalidatePath('/admin/settings')
+    revalidatePath('/admin/users')
     return { success: true, user }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating user role:', error)
+    
+    if (error.code === 'P2025') {
+      return { success: false, error: 'User not found' }
+    }
+    
     return { success: false, error: 'Failed to update user role' }
   }
 }
 
-export async function deleteUser(userId) {
+export async function deleteUser(userId: string) {
   try {
+    // Валидация ID пользователя
+    const validation = validateWithSchema(z.object({ userId: z.string().cuid() }), { userId })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     await prisma.user.delete({
       where: { id: userId }
     })
+    
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_DELETED',
+        resource: 'user',
+        resourceId: userId,
+        userId: 'system'
+      }
+    })
+
     revalidatePath('/admin')
-    revalidatePath('/admin/settings')
-    return { success: true }
-  } catch (error) {
+    revalidatePath('/admin/users')
+    return { success: true, message: 'User deleted successfully' }
+  } catch (error: any) {
     console.error('Error deleting user:', error)
+    
+    if (error.code === 'P2025') {
+      return { success: false, error: 'User not found' }
+    }
+    
     return { success: false, error: 'Failed to delete user' }
   }
 }
@@ -171,7 +333,7 @@ export async function getSystemSettings() {
         isPublic: setting.isPublic
       }
       return acc
-    }, {})
+    }, {} as Record<string, any>)
 
     return { success: true, settings: formattedSettings }
   } catch (error) {
@@ -180,36 +342,149 @@ export async function getSystemSettings() {
   }
 }
 
-export async function updateSystemSettings(key, value) {
+export async function updateSystemSetting(key: string, value: string) {
   try {
+    // Валидация данных
+    const validation = validateWithSchema(systemSettingUpdateSchema, { key, value })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const setting = await prisma.systemSettings.update({
       where: { key },
       data: { value }
     })
+    
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'SYSTEM_SETTING_UPDATED',
+        resource: 'system_setting',
+        resourceId: key,
+        userId: 'system',
+        newValues: { value }
+      }
+    })
+
     revalidatePath('/admin/settings')
     return { success: true, setting }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating system setting:', error)
+    
+    if (error.code === 'P2025') {
+      return { success: false, error: 'Setting not found' }
+    }
+    
     return { success: false, error: 'Failed to update system setting' }
   }
 }
 
-export async function createSystemSetting(settingData) {
+export async function createSystemSetting(settingData: {
+  key: string
+  value: string
+  description?: string
+  category: string
+  isPublic?: boolean
+  dataType?: string
+}) {
   try {
+    // Валидация данных
+    const validation = validateWithSchema(systemSettingCreateSchema, settingData)
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const setting = await prisma.systemSettings.create({
-      data: settingData
+      data: {
+        key: settingData.key,
+        value: settingData.value,
+        description: settingData.description,
+        category: settingData.category as any,
+        isPublic: settingData.isPublic ?? false,
+        dataType: (settingData.dataType as any) || 'STRING'
+      }
     })
+    
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'SYSTEM_SETTING_CREATED',
+        resource: 'system_setting',
+        resourceId: settingData.key,
+        userId: 'system',
+        newValues: settingData
+      }
+    })
+
     revalidatePath('/admin/settings')
     return { success: true, setting }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating system setting:', error)
+    
+    if (error.code === 'P2002') {
+      return { success: false, error: 'Setting key already exists' }
+    }
+    
     return { success: false, error: 'Failed to create system setting' }
+  }
+}
+
+export async function deleteSystemSetting(key: string) {
+  try {
+    // Валидация ключа
+    const validation = validateWithSchema(z.object({ key: z.string().min(1) }), { key })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
+    await prisma.systemSettings.delete({
+      where: { key }
+    })
+    
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'SYSTEM_SETTING_DELETED',
+        resource: 'system_setting',
+        resourceId: key,
+        userId: 'system'
+      }
+    })
+
+    revalidatePath('/admin/settings')
+    return { success: true, message: 'System setting deleted successfully' }
+  } catch (error: any) {
+    console.error('Error deleting system setting:', error)
+    
+    if (error.code === 'P2025') {
+      return { success: false, error: 'Setting not found' }
+    }
+    
+    return { success: false, error: 'Failed to delete system setting' }
   }
 }
 
 // Аудит и логи
 export async function getAuditLogs(page = 1, limit = 50) {
   try {
+    // Валидация пагинации
+    const validation = validateWithSchema(paginationSchema, { page, limit })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const skip = (page - 1) * limit
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
@@ -246,8 +521,17 @@ export async function getAuditLogs(page = 1, limit = 50) {
 }
 
 // Управление настройками пользователей
-export async function getUserSettings(userId) {
+export async function getUserSettings(userId: string) {
   try {
+    // Валидация ID пользователя
+    const validation = validateWithSchema(z.object({ userId: z.string().cuid() }), { userId })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -271,8 +555,53 @@ export async function getUserSettings(userId) {
   }
 }
 
-export async function updateUserSettings(userId, settingsType, data) {
+export async function updateUserSettings(
+  userId: string, 
+  settingsType: 'general' | 'notifications' | 'privacy' | 'appearance' | 'learning' | 'security', 
+  data: any
+) {
   try {
+    // Валидация базовых параметров
+    const baseValidation = validateWithSchema(userSettingsUpdateSchema, { userId, settingsType, data })
+    if (!baseValidation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(baseValidation)
+      }
+    }
+
+    // Валидация данных в зависимости от типа настроек
+    let validatedData;
+    switch (settingsType) {
+      case 'general':
+        validatedData = validateWithSchema(generalSettingsSchema, data)
+        break
+      case 'notifications':
+        validatedData = validateWithSchema(notificationSettingsSchema, data)
+        break
+      case 'privacy':
+        validatedData = validateWithSchema(privacySettingsSchema, data)
+        break
+      case 'appearance':
+        validatedData = validateWithSchema(appearanceSettingsSchema, data)
+        break
+      case 'learning':
+        validatedData = validateWithSchema(learningSettingsSchema, data)
+        break
+      case 'security':
+        validatedData = validateWithSchema(securitySettingsSchema, data)
+        break
+      default:
+        return { success: false, error: 'Invalid settings type' }
+    }
+
+    if (!validatedData.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validatedData)
+      }
+    }
+
     let result
 
     switch (settingsType) {
@@ -322,9 +651,21 @@ export async function updateUserSettings(userId, settingsType, data) {
         return { success: false, error: 'Invalid settings type' }
     }
 
+    // Логируем действие
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_SETTINGS_UPDATED',
+        resource: 'user_settings',
+        resourceId: userId,
+        userId: 'system',
+        newValues: { settingsType, data }
+      }
+    })
+
     revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${userId}`)
     return { success: true, result }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating user settings:', error)
     return { success: false, error: 'Failed to update user settings' }
   }
@@ -378,10 +719,19 @@ export async function getSettingsStats() {
 // Очистка старых данных
 export async function cleanupOldData(days = 30) {
   try {
+    // Валидация данных
+    const validation = validateWithSchema(cleanupDataSchema, { days })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - days)
 
-    const [deletedSessions, deletedNotifications] = await Promise.all([
+    const [deletedSessions, deletedNotifications, deletedAuditLogs] = await Promise.all([
       prisma.studySession.deleteMany({
         where: {
           createdAt: {
@@ -396,14 +746,37 @@ export async function cleanupOldData(days = 30) {
           },
           isRead: true
         }
+      }),
+      prisma.auditLog.deleteMany({
+        where: {
+          createdAt: {
+            lt: cutoffDate
+          }
+        }
       })
     ])
+
+    // Логируем действие очистки
+    await prisma.auditLog.create({
+      data: {
+        action: 'DATA_CLEANUP',
+        resource: 'system',
+        userId: 'system',
+        newValues: {
+          deletedSessions: deletedSessions.count,
+          deletedNotifications: deletedNotifications.count,
+          deletedAuditLogs: deletedAuditLogs.count,
+          cutoffDate: cutoffDate.toISOString()
+        }
+      }
+    })
 
     return {
       success: true,
       result: {
         deletedSessions: deletedSessions.count,
-        deletedNotifications: deletedNotifications.count
+        deletedNotifications: deletedNotifications.count,
+        deletedAuditLogs: deletedAuditLogs.count
       }
     }
   } catch (error) {
@@ -412,30 +785,164 @@ export async function cleanupOldData(days = 30) {
   }
 }
 
-// Резервное копирование данных (заглушка)
-export async function backupData() {
+// Управление навыками - упрощенная версия без сложных groupBy
+export async function getSkillsStats() {
   try {
-    // Здесь должна быть логика создания бэкапа
+    const [
+      totalSkills,
+      skillsByDifficulty,
+      allSkills
+    ] = await Promise.all([
+      prisma.skill.count(),
+      prisma.skill.groupBy({
+        by: ['difficulty'],
+        _count: {
+          _all: true
+        }
+      }),
+      prisma.skill.findMany({
+        include: {
+          _count: {
+            select: {
+              userSkills: true,
+              learningResources: true,
+              projectSkills: true
+            }
+          }
+        }
+      })
+    ])
+
+    // Получаем категории без использования take в groupBy
+    const skillsByCategory = await prisma.skill.findMany({
+      select: {
+        category: true
+      },
+      distinct: ['category']
+    })
+
+    // Получаем популярные навыки через обычный запрос
+    const popularSkills = await prisma.skill.findMany({
+      include: {
+        _count: {
+          select: {
+            userSkills: true
+          }
+        }
+      },
+      orderBy: {
+        userSkills: {
+          _count: 'desc'
+        }
+      },
+      take: 10
+    })
+
+    return {
+      success: true,
+      stats: {
+        totalSkills,
+        skillsByDifficulty,
+        popularSkills: popularSkills.map(skill => ({
+          ...skill,
+          userCount: skill._count.userSkills
+        })),
+        skillsByCategory: skillsByCategory.map(item => item.category).filter(Boolean)
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching skills stats:', error)
+    return { success: false, error: 'Failed to fetch skills statistics' }
+  }
+}
+
+// Системное обслуживание
+export async function runSystemMaintenance() {
+  try {
+    const maintenanceTasks = await Promise.allSettled([
+      // Обновление статистики пользователей
+      prisma.$executeRaw`UPDATE user_stats SET weekly_progress = 0 WHERE updatedAt < date('now', '-7 days')`,
+      
+      // Сброс дневных целей для неактивных пользователей
+      prisma.user.updateMany({
+        where: {
+          updatedAt: {
+            lt: new Date(new Date().setDate(new Date().getDate() - 30))
+          }
+        },
+        data: {
+          dailyGoal: 30
+        }
+      }),
+      
+      // Очистка неиспользуемых сессий
+      prisma.studySession.deleteMany({
+        where: {
+          duration: 0
+        }
+      })
+    ])
+
+    const results = maintenanceTasks.map((task, index) => ({
+      task: ['Reset weekly progress', 'Reset inactive user goals', 'Clean zero-duration sessions'][index],
+      status: task.status,
+      value: task.status === 'fulfilled' ? task.value : task.reason
+    }))
+
+    // Логируем обслуживание
+    await prisma.auditLog.create({
+      data: {
+        action: 'SYSTEM_MAINTENANCE',
+        resource: 'system',
+        userId: 'system',
+        newValues: results
+      }
+    })
+
+    return {
+      success: true,
+      results
+    }
+  } catch (error) {
+    console.error('Error running system maintenance:', error)
+    return { success: false, error: 'Failed to run system maintenance' }
+  }
+}
+
+// Экспорт данных
+export async function exportData(format: 'json' | 'csv' = 'json') {
+  try {
+    // Валидация данных
+    const validation = validateWithSchema(exportDataSchema, { format })
+    if (!validation.success) {
+      return { 
+        success: false, 
+        error: getValidationErrors(validation)
+      }
+    }
+
+    // Здесь должна быть логика экспорта данных
     // Пока возвращаем заглушку
-    const backupInfo = {
+    const exportInfo = {
       timestamp: new Date().toISOString(),
-      size: '0 MB',
-      status: 'completed'
+      format,
+      status: 'completed',
+      size: '0 MB'
     }
 
     // Логируем действие
     await prisma.auditLog.create({
       data: {
-        action: 'BACKUP_CREATED',
+        action: 'DATA_EXPORT',
         resource: 'system',
-        userId: 'system', // или ID администратора
-        newValues: backupInfo
+        userId: 'system',
+        newValues: exportInfo
       }
     })
 
-    return { success: true, backup: backupInfo }
+    return { success: true, export: exportInfo }
   } catch (error) {
-    console.error('Error creating backup:', error)
-    return { success: false, error: 'Failed to create backup' }
+    console.error('Error exporting data:', error)
+    return { success: false, error: 'Failed to export data' }
   }
 }
