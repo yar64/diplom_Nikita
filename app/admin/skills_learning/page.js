@@ -5,128 +5,127 @@ import {
   BookOpen, 
   Users, 
   Clock, 
-  FileText, 
+  DollarSign, 
   Search, 
-  Plus
+  Plus,
+  Star,
+  Filter,
+  PlayCircle,
+  Folder,
+  Tag,
+  Hash,
+  Grid3x3,
+  BarChart3
 } from "lucide-react";
 import { Table } from "../../../components/admin/share/Table";
 import { StatCard } from "../../../components/admin/ui/data-display/StatCard";
 import { Tabs } from "../../../components/admin/share/Tabs";
 import { StatusBadge } from "../../../components/admin/ui/data-display/StatusBadge";
 import ActionButton from "../../../components/admin/ui/buttons/ActionButton";
-import { getSkills, deleteSkill } from "../../../server/skill.actions";
-import { getLearningPaths, deleteLearningPath } from "../../../server/learning-path.actions";
-import { getUserSessions } from "../../../server/studySession.actions";
-import { SkillModal } from "../../../components/admin/ui/modals/SkillModal";
+import { CourseModal } from "../../../components/admin/ui/modals/CourseModal";
+import { CategoryModal } from "../../../components/admin/ui/modals/CategoryModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
+import { getCourses, deleteCourse, getCourseCategories, getPopularCourses } from "../../../server/course.actions";
+import { getMyCourses, enrollInCourse } from "../../../server/course-progress.actions";
 
 const tabs = [
-  { id: "skills", label: "Управление навыками" },
-  { id: "paths", label: "Пути обучения" },
-  { id: "sessions", label: "Учебные сессии" },
-  { id: "resources", label: "Ресурсы" },
+  { id: "courses", label: "Курсы", icon: <BookOpen className="w-4 h-4" /> },
+  { id: "categories", label: "Категории", icon: <Folder className="w-4 h-4" /> },
 ];
 
-// Опции фильтров
-const categoryOptions = [
-  { value: "", label: "Все категории" },
-  { value: "frontend", label: "Frontend" },
-  { value: "backend", label: "Backend" },
-  { value: "mobile", label: "Mobile" },
-  { value: "devops", label: "DevOps" },
-  { value: "database", label: "Database" },
-];
-
-const sortOptions = [
-  { value: "popularity", label: "Популярность" },
-  { value: "name", label: "Название" },
-  { value: "difficulty", label: "Сложность" },
-];
-
-const periodOptions = [
-  { value: "7days", label: "7 дней" },
-  { value: "30days", label: "30 дней" },
-  { value: "all", label: "Все время" },
-];
-
-const typeOptions = [
-  { value: "", label: "Все типы" },
-  { value: "THEORY", label: "Теория" },
-  { value: "PRACTICE", label: "Практика" },
-];
-
-const difficultyOptions = [
-  { value: "", label: "Все сложности" },
+const levelOptions = [
+  { value: "", label: "Все уровни" },
   { value: "BEGINNER", label: "Начинающий" },
   { value: "INTERMEDIATE", label: "Средний" },
   { value: "ADVANCED", label: "Продвинутый" },
+  { value: "EXPERT", label: "Эксперт" },
 ];
 
-export default function SkillsLearningPage() {
-  const [activeTab, setActiveTab] = useState("skills");
+const statusOptions = [
+  { value: "PUBLISHED", label: "Опубликованные" },
+  { value: "DRAFT", label: "Черновики" },
+  { value: "ARCHIVED", label: "Архивные" },
+];
+
+const sortOptions = [
+  { value: "popular", label: "По популярности" },
+  { value: "rating", label: "По рейтингу" },
+  { value: "new", label: "По новизне" },
+  { value: "price_low", label: "Сначала дешевые" },
+  { value: "price_high", label: "Сначала дорогие" },
+];
+
+export default function CoursesPage() {
+  const [activeTab, setActiveTab] = useState("courses");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [sortBy, setSortBy] = useState("popularity");
-  const [period, setPeriod] = useState("7days");
-  const [sessionType, setSessionType] = useState("");
-  const [difficulty, setDifficulty] = useState("");
+  const [level, setLevel] = useState("");
+  const [status, setStatus] = useState("PUBLISHED");
+  const [sortBy, setSortBy] = useState("popular");
   
-  // Состояния для реальных данных
-  const [skills, setSkills] = useState([]);
-  const [learningPaths, setLearningPaths] = useState([]);
-  const [studySessions, setStudySessions] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [popularCourses, setPopularCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalSkills: 0,
-    activeLearners: 0,
-    studyHours: 0,
-    resources: 0
+    totalCourses: 0,
+    enrolledStudents: 0,
+    totalRevenue: 0,
+    avgRating: 0
   });
 
-  // Состояния для модальных окон
-  const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
+  const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingSkill, setEditingSkill] = useState(null);
-  const [deletingSkill, setDeletingSkill] = useState(null);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [deletingCourse, setDeletingCourse] = useState(null);
+  const [deletingCategory, setDeletingCategory] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Загрузка данных
+  const userId = "mock-user-id";
+
   useEffect(() => {
     loadData();
-  }, [activeTab]);
+  }, [activeTab, category, level, status, sortBy]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const cats = await getCourseCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error("Ошибка загрузки категорий:", error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
     try {
-      switch (activeTab) {
-        case "skills":
-          const skillsResult = await getSkills();
-          if (skillsResult.success) {
-            setSkills(skillsResult.skills || []);
-          } else {
-            console.error("Ошибка загрузки навыков:", skillsResult.error);
-          }
-          break;
-        case "paths":
-          const pathsResult = await getLearningPaths();
-          if (pathsResult.success) {
-            setLearningPaths(pathsResult.learningPaths || []);
-          } else {
-            console.error("Ошибка загрузки путей обучения:", pathsResult.error);
-          }
-          break;
-        case "sessions":
-          // Здесь нужно передать конкретный userId, пока используем mock
-          const sessionsResult = await getUserSessions("user-id");
-          if (sessionsResult.success) {
-            setStudySessions(sessionsResult.sessions || []);
-          } else {
-            console.error("Ошибка загрузки учебных сессий:", sessionsResult.error);
-          }
-          break;
+      if (activeTab === "courses") {
+        const filters = {
+          status: status,
+          category,
+          level: level,
+          search: search || undefined,
+        };
+
+        const result = await getCourses(filters);
+        if (result.courses) {
+          setCourses(result.courses);
+        } else {
+          console.error("Ошибка загрузки курсов:", result);
+        }
+
+        const popularResult = await getPopularCourses(10);
+        if (Array.isArray(popularResult)) {
+          setPopularCourses(popularResult);
+        }
       }
       
-      // Загрузка статистики
       await loadStats();
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
@@ -136,193 +135,219 @@ export default function SkillsLearningPage() {
   };
 
   const loadStats = async () => {
-    // Вычисляем статистику на основе загруженных данных
-    const totalSkills = skills.length;
-    
-    // Считаем общее количество пользователей, изучающих навыки
-    const activeLearners = skills.reduce((acc, skill) => 
-      acc + (skill.userSkills?.length || 0), 0
-    );
-    
-    // Считаем общее количество часов обучения
-    const studyHours = Math.round(
-      studySessions.reduce((acc, session) => acc + (session.duration || 0), 0) / 60
-    );
-    
-    // Считаем общее количество ресурсов
-    const resources = skills.reduce((acc, skill) => 
-      acc + (skill.learningResources?.length || 0), 0
-    );
-    
-    setStats({
-      totalSkills,
-      activeLearners,
-      studyHours,
-      resources
-    });
+    try {
+      const allCourses = await getCourses();
+      
+      const totalCourses = allCourses.total || 0;
+      const enrolledStudents = allCourses.courses?.reduce((acc, course) => 
+        acc + (course.totalStudents || 0), 0
+      ) || 0;
+      
+      const totalRevenue = allCourses.courses?.reduce((acc, course) => 
+        acc + (course.price || 0) * (course.totalStudents || 0), 0
+      ) || 0;
+      
+      const avgRating = allCourses.courses?.length > 0 
+        ? allCourses.courses.reduce((acc, course) => acc + (course.averageRating || 0), 0) / allCourses.courses.length
+        : 0;
+
+      setStats({
+        totalCourses,
+        enrolledStudents,
+        totalRevenue,
+        avgRating: parseFloat(avgRating.toFixed(1))
+      });
+    } catch (error) {
+      console.error("Ошибка загрузки статистики:", error);
+    }
   };
 
-  // Функции для работы с модальными окнами навыков
-  const handleAddSkill = () => {
-    setEditingSkill(null);
-    setIsSkillModalOpen(true);
+  const handleAddCourse = () => {
+    setEditingCourse(null);
+    setIsCourseModalOpen(true);
   };
 
-  const handleEditSkill = (skill) => {
-    setEditingSkill(skill);
-    setIsSkillModalOpen(true);
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+    setIsCourseModalOpen(true);
   };
 
-  const handleCloseSkillModal = () => {
-    setIsSkillModalOpen(false);
-    setEditingSkill(null);
+  const handleCloseCourseModal = () => {
+    setIsCourseModalOpen(false);
+    setEditingCourse(null);
   };
 
-  const handleSkillSuccess = () => {
-    loadData(); // Перезагружаем данные после успешного создания/обновления
+  const handleCourseSuccess = () => {
+    loadData();
   };
 
-  // Функции для удаления навыков
-  const handleDeleteClick = (skill) => {
-    setDeletingSkill(skill);
+  const handleAddCategory = () => {
+    setEditingCategory(null);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleEditCategory = (category) => {
+    setEditingCategory(category);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleCloseCategoryModal = () => {
+    setIsCategoryModalOpen(false);
+    setEditingCategory(null);
+  };
+
+  const handleCategorySuccess = () => {
+    loadCategories();
+  };
+
+  const handleDeleteClick = (course) => {
+    setDeletingCourse(course);
     setIsDeleteModalOpen(true);
   };
 
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
-    setDeletingSkill(null);
+    setDeletingCourse(null);
+    setDeletingCategory(null);
     setIsDeleting(false);
   };
 
   const handleConfirmDelete = async () => {
-    if (!deletingSkill) return;
-    
     setIsDeleting(true);
+    
     try {
-      const result = await deleteSkill(deletingSkill.id);
-      if (result.success) {
-        setSkills(skills.filter(skill => skill.id !== deletingSkill.id));
-        handleCloseDeleteModal();
-      } else {
-        alert(result.error);
-        handleCloseDeleteModal();
+      if (deletingCourse) {
+        const instructorId = "mock-instructor-id";
+        await deleteCourse(deletingCourse.id, instructorId);
+        setCourses(courses.filter(course => course.id !== deletingCourse.id));
+      } else if (deletingCategory) {
+        console.log("Удаление категории:", deletingCategory);
+        setCategories(categories.filter(cat => cat !== deletingCategory));
       }
+      
+      handleCloseDeleteModal();
     } catch (error) {
-      alert("Ошибка при удалении навыка");
+      alert(error.message || "Ошибка при удалении");
       handleCloseDeleteModal();
     }
   };
 
-  // Функции для работы с путями обучения
-  const handleDeleteLearningPath = async (pathId, pathTitle) => {
-    if (window.confirm(`Вы уверены, что хотите удалить путь обучения "${pathTitle}"?`)) {
-      try {
-        const result = await deleteLearningPath(pathId);
-        if (result.success) {
-          setLearningPaths(learningPaths.filter(path => path.id !== pathId));
-        } else {
-          alert(result.error);
-        }
-      } catch (error) {
-        alert("Ошибка при удалении пути обучения");
-      }
+  const handleEnrollCourse = async (courseId) => {
+    try {
+      await enrollInCourse(courseId, userId);
+      alert("Вы успешно записались на курс!");
+      loadData();
+    } catch (error) {
+      alert(error.message || "Ошибка при записи на курс");
     }
   };
 
-  // Функция для отображения аватаров пользователей
-  const renderUserAvatars = (userSkills, totalUsers) => {
-    if (!userSkills || userSkills.length === 0) {
-      return (
-        <div className="flex items-center space-x-3">
-          <div className="flex -space-x-2">
-            <div className="w-8 h-8 bg-gray-300 rounded-full border-2 border-white"></div>
-            <div className="w-8 h-8 bg-gray-400 rounded-full border-2 border-white"></div>
-            <div className="w-8 h-8 bg-gray-500 rounded-full border-2 border-white flex items-center justify-center">
-              <span className="text-white text-xs">+0</span>
-            </div>
-          </div>
-          <span className="text-gray-700 font-medium">0</span>
-        </div>
-      );
-    }
-
-    const visibleUsers = userSkills.slice(0, 3);
-    const remainingUsers = Math.max(0, totalUsers - 3);
-
+  const renderRating = (rating, totalReviews) => {
     return (
-      <div className="flex items-center space-x-3">
-        <div className="flex -space-x-2">
-          {visibleUsers.map((userSkill, index) => (
-            <div 
-              key={userSkill.id}
-              className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium"
-              title={userSkill.user?.name || userSkill.user?.email}
-            >
-              {(userSkill.user?.name?.[0] || userSkill.user?.email?.[0] || 'U').toUpperCase()}
-            </div>
-          ))}
-          {remainingUsers > 0 && (
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full border-2 border-white flex items-center justify-center">
-              <span className="text-white text-xs">+{remainingUsers}</span>
-            </div>
-          )}
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center">
+          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+          <span className="ml-1 font-semibold">{rating.toFixed(1)}</span>
         </div>
-        <span className="text-gray-700 font-medium">{totalUsers}</span>
+        <span className="text-sm text-gray-500">({totalReviews})</span>
       </div>
     );
   };
 
-  // Преобразование данных для таблицы навыков
-  const getSkillsTableData = () => {
-    return skills.map(skill => {
-      const userSkillsCount = skill.userSkills?.length || 0;
-      const resourcesCount = skill.learningResources?.length || 0;
+  const renderPrice = (course) => {
+    if (course.isFree) {
+      return (
+        <span className="px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+          Бесплатно
+        </span>
+      );
+    }
 
+    return (
+      <div className="flex items-center space-x-2">
+        <span className="text-lg font-bold text-gray-900">
+          {course.price?.toLocaleString('ru-RU')} ₽
+        </span>
+        {course.originalPrice && course.originalPrice > course.price && (
+          <span className="text-sm text-gray-500 line-through">
+            {course.originalPrice.toLocaleString('ru-RU')} ₽
+          </span>
+        )}
+        {course.discountPercent && (
+          <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+            -{course.discountPercent}%
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const getCoursesTableData = (coursesList) => {
+    return coursesList.map(course => {
       return [
-        <div key={skill.id} className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">
-              {skill.icon || skill.name.substring(0, 2).toUpperCase()}
-            </span>
+        <div key={course.id} className="flex items-center space-x-3">
+          <div className="w-12 h-12 flex-shrink-0">
+            {course.thumbnailUrl ? (
+              <img 
+                src={course.thumbnailUrl} 
+                alt={course.title}
+                className="w-full h-full object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+            )}
           </div>
-          <div>
-            <div className="font-semibold text-gray-900">{skill.name}</div>
-            <div className="text-sm text-gray-500">{skill.description || "Нет описания"}</div>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-gray-900 truncate">{course.title}</div>
+            <div className="text-sm text-gray-500 flex items-center space-x-2 mt-1">
+              <Tag className="w-3 h-3" />
+              <span>{course.category}</span>
+              <span>•</span>
+              <span>{course.totalLessons || 0} уроков</span>
+              <span>•</span>
+              <span>@{course.instructor?.username || course.instructorId?.substring(0, 8)}</span>
+            </div>
           </div>
         </div>,
-        <div key={`${skill.id}-category`} className="text-gray-700 capitalize">
-          {skill.category}
+        <div key={`${course.id}-level`}>
+          <StatusBadge 
+            status={course.level} 
+            variant={
+              course.level === 'BEGINNER' ? 'success' : 
+              course.level === 'INTERMEDIATE' ? 'warning' : 'error'
+            } 
+          />
         </div>,
-        <StatusBadge 
-          key={`${skill.id}-diff`} 
-          status={skill.difficulty} 
-          variant={
-            skill.difficulty === 'BEGINNER' ? 'success' : 
-            skill.difficulty === 'INTERMEDIATE' ? 'warning' : 'error'
-          } 
-        />,
-        renderUserAvatars(skill.userSkills, userSkillsCount),
-        <div key={`${skill.id}-resources`} className="text-center">
-          <span className="text-blue-600 font-semibold">{resourcesCount}</span>
+        renderRating(course.averageRating || 0, course.totalReviews || 0),
+        <div key={`${course.id}-students`} className="flex items-center space-x-2">
+          <Users className="w-4 h-4 text-gray-400" />
+          <span className="font-medium">{course.totalStudents || 0}</span>
         </div>,
+        renderPrice(course),
         <ActionButton
-          key={`${skill.id}-actions`}
+          key={`${course.id}-actions`}
           actions={[
             {
               type: "edit",
-              onClick: () => handleEditSkill(skill),
+              onClick: () => handleEditCourse(course),
             },
             {
               type: "view",
-              onClick: () => console.log("Просмотр навыка", skill.name),
+              onClick: () => window.open(`/course/${course.slug}`, '_blank'),
             },
             {
               type: "stats",
-              onClick: () => console.log("Статистика для", skill.name),
+              onClick: () => console.log("Статистика для", course.title),
+            },
+            {
+              type: "add",
+              onClick: () => handleEnrollCourse(course.id),
             },
             {
               type: "delete",
-              onClick: () => handleDeleteClick(skill),
+              onClick: () => handleDeleteClick(course),
             },
           ]}
           variant="default"
@@ -332,100 +357,72 @@ export default function SkillsLearningPage() {
     });
   };
 
-  // Преобразование данных для таблицы путей обучения
-  const getLearningPathsTableData = () => {
-    return learningPaths.map(path => [
-      <div key={path.id} className="flex items-center space-x-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center">
-          <span className="text-white text-sm">🚀</span>
-        </div>
-        <div>
-          <div className="font-semibold text-gray-900">{path.title}</div>
-          <div className="text-sm text-gray-500">@{path.user?.name || path.user?.email?.split('@')[0] || 'неизвестно'}</div>
-        </div>
-      </div>,
-      <div key={`${path.id}-skills`} className="flex items-center space-x-2">
-        <div className="flex space-x-1">
-          {["🟢", "🟢", "🟢", "🟢", "⚪"].map((dot, i) => (
-            <span key={i}>{dot}</span>
-          ))}
-        </div>
-        <span className="text-sm text-gray-600">{path.milestones?.length || 0} этапов</span>
-      </div>,
-      <div key={`${path.id}-participants`} className="text-center">
-        <span className="text-gray-700 font-medium">0</span>
-      </div>,
-      <div key={`${path.id}-progress`} className="flex items-center space-x-3">
-        <div className="w-20 bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-green-500 h-2 rounded-full"
-            style={{ width: "70%" }}
-          />
-        </div>
-        <span className="text-sm font-medium text-gray-600">70%</span>
-      </div>,
-      <ActionButton
-        key={`${path.id}-actions`}
-        actions={[
-          {
-            type: "edit",
-            onClick: () => console.log("Редактировать путь обучения", path.title),
-          },
-          {
-            type: "view",
-            onClick: () => console.log("Просмотреть путь обучения", path.title),
-          },
-          {
-            type: "delete",
-            onClick: () => handleDeleteLearningPath(path.id, path.title),
-          },
-        ]}
-        variant="default"
-        size="sm"
-      />,
-    ]);
+  const getCategoriesTableData = (categoriesList) => {
+    const categoryStats = categoriesList.reduce((acc, category) => {
+      const coursesInCategory = courses.filter(course => course.category === category);
+      acc[category] = {
+        count: coursesInCategory.length,
+        students: coursesInCategory.reduce((sum, course) => sum + (course.totalStudents || 0), 0),
+        revenue: coursesInCategory.reduce((sum, course) => sum + (course.price || 0) * (course.totalStudents || 0), 0)
+      };
+      return acc;
+    }, {});
+
+    return categoriesList.map((category, index) => {
+      const stats = categoryStats[category] || { count: 0, students: 0, revenue: 0 };
+      
+      return [
+        <div key={index} className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center">
+            <Folder className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-900">{category}</div>
+            <div className="text-sm text-gray-500">{stats.count} курсов</div>
+          </div>
+        </div>,
+        <div key={`${category}-count`} className="text-center">
+          <div className="text-lg font-bold text-blue-600">{stats.count}</div>
+          <div className="text-xs text-gray-500">курсов</div>
+        </div>,
+        <div key={`${category}-students`} className="text-center">
+          <div className="text-lg font-bold text-green-600">{stats.students}</div>
+          <div className="text-xs text-gray-500">студентов</div>
+        </div>,
+        <div key={`${category}-revenue`} className="text-center">
+          <div className="text-lg font-bold text-amber-600">{stats.revenue.toLocaleString('ru-RU')} ₽</div>
+          <div className="text-xs text-gray-500">доход</div>
+        </div>,
+        <ActionButton
+          key={`${category}-actions`}
+          actions={[
+            {
+              type: "edit",
+              onClick: () => handleEditCategory(category),
+            },
+            {
+              type: "view",
+              onClick: () => {
+                setCategory(category);
+                setActiveTab("courses");
+              },
+            },
+            {
+              type: "delete",
+              onClick: () => {
+                setDeletingCategory(category);
+                setIsDeleteModalOpen(true);
+              },
+            },
+          ]}
+          variant="default"
+          size="sm"
+        />,
+      ];
+    });
   };
 
-  // Преобразование данных для таблицы сессий обучения
-  const getStudySessionsTableData = () => {
-    return studySessions.map(session => [
-      <div key={session.id} className="flex items-center space-x-2">
-        <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full"></div>
-        <span className="font-medium text-gray-900">@{session.userId?.substring(0, 8) || 'неизвестно'}</span>
-      </div>,
-      <span key={`${session.id}-skill`} className="text-gray-700">
-        {session.userSkill?.skill?.name || 'Неизвестный навык'}
-      </span>,
-      <div key={`${session.id}-duration`} className="flex items-center space-x-2 text-green-600 font-medium">
-        <Clock className="w-4 h-4" />
-        <span>{Math.round((session.duration || 0) / 60)}ч {(session.duration || 0) % 60}м</span>
-      </div>,
-      <StatusBadge key={`${session.id}-type`} status={session.sessionType} variant="info" />,
-      <div key={`${session.id}-efficiency`} className="flex items-center space-x-2">
-        <div className="flex">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <span 
-              key={star} 
-              className={star <= Math.floor(((session.efficiency || 0) / 20)) ? "text-amber-400" : "text-gray-300"}
-            >
-              ⭐
-            </span>
-          ))}
-        </div>
-        <span className="text-sm font-medium text-gray-600">{session.efficiency || 0}%</span>
-      </div>,
-      <span key={`${session.id}-date`} className="text-gray-600">
-        {session.date ? new Date(session.date).toLocaleDateString('ru-RU', { 
-          day: 'numeric', 
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit'
-        }) : 'Неизвестная дата'}
-      </span>,
-    ]);
-  };
-
-  const renderTabContent = () => {
+  const renderCoursesTab = () => {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
@@ -434,236 +431,201 @@ export default function SkillsLearningPage() {
       );
     }
 
-    switch (activeTab) {
-      case "skills":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                Показано {skills.length} из {skills.length} навыков
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Поиск навыков..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {categoryOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {sortOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <Table
-              headers={[
-                "Навык",
-                "Категория",
-                "Сложность",
-                "Изучают",
-                "Ресурсы",
-                "Действия",
-              ]}
-              data={getSkillsTableData()}
-              striped={true}
-              hover={true}
-            />
-          </div>
-        );
-
-      case "paths":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                Показано {learningPaths.length} из {learningPaths.length} путей
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Поиск путей..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Table
-              headers={[
-                "Название пути",
-                "Навыки",
-                "Участники",
-                "Прогресс",
-                "Действия",
-              ]}
-              data={getLearningPathsTableData()}
-              striped={true}
-              hover={true}
-            />
-          </div>
-        );
-
-      case "sessions":
-        return (
-          <div className="space-y-6">
-            <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-3 text-sm">
-                Активность обучения
+    return (
+      <div className="space-y-6">
+        {/* Блок популярных курсов */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Популярные курсы
               </h3>
-              <div className="flex items-center space-x-4 text-xs">
-                {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map(
-                  (day, index) => (
-                    <div
-                      key={day}
-                      className="flex flex-col items-center space-y-2"
-                    >
-                      <div
-                        className="w-3 bg-gradient-to-t from-green-400 to-green-500 rounded-full"
-                        style={{
-                          height: `${
-                            [45, 67, 89, 54, 32, 78, 61][index] / 2
-                          }px`,
-                        }}
-                      />
-                      <span className="text-gray-600">{day}</span>
+              <p className="text-sm text-gray-600">Топ курсов по популярности</p>
+            </div>
+          </div>
+          
+          {popularCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {popularCourses.slice(0, 3).map(course => (
+                <div key={course.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden">
+                      {course.thumbnailUrl ? (
+                        <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-white" />
+                        </div>
+                      )}
                     </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                Показано {studySessions.length} из {studySessions.length} сессий
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Поиск сессий..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 truncate">{course.title}</h4>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Star className="w-3 h-3 mr-1" />
+                        <span>{course.averageRating?.toFixed(1) || '0.0'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-600">
+                      <Users className="w-3 h-3 inline mr-1" />
+                      {course.totalStudents || 0}
+                    </div>
+                    <button
+                      onClick={() => handleEnrollCourse(course.id)}
+                      className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors"
+                    >
+                      Записаться
+                    </button>
+                  </div>
                 </div>
-                <select
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {periodOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={sessionType}
-                  onChange={(e) => setSessionType(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {typeOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              ))}
             </div>
+          ) : (
+            <div className="text-center py-4 text-gray-500">
+              Нет популярных курсов
+            </div>
+          )}
+        </div>
 
+        {/* Фильтры и поиск */}
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Показано {courses.length} курсов
+          </div>
+          <div className="flex space-x-3">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Поиск курсов..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+              />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Все категории</option>
+              {categories.map((cat, index) => (
+                <option key={index} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {levelOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Таблица курсов */}
+        {courses.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Курсы не найдены</h3>
+            <p className="text-gray-500 mb-6">Попробуйте изменить параметры фильтрации</p>
+          </div>
+        ) : (
+          <Table
+            headers={[
+              "Название курса",
+              "Уровень",
+              "Рейтинг",
+              "Студенты",
+              "Цена",
+              "Действия",
+            ]}
+            data={getCoursesTableData(courses)}
+            striped={true}
+            hover={true}
+          />
+        )}
+      </div>
+    );
+  };
+
+  const renderCategoriesTab = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            {categories.length} категорий
+          </div>
+        </div>
+
+        {categories.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+            <Folder className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Категории не найдены</h3>
+            <p className="text-gray-500 mb-6">Создайте первую категорию для ваших курсов</p>
+          </div>
+        ) : (
+          <>
             <Table
               headers={[
-                "Пользователь",
-                "Навык",
-                "Длительность",
-                "Тип",
-                "Эффективность",
-                "Дата",
+                "Название категории",
+                "Курсов",
+                "Студентов",
+                "Доход",
+                "Действия",
               ]}
-              data={getStudySessionsTableData()}
+              data={getCategoriesTableData(categories)}
               striped={true}
               hover={true}
             />
-          </div>
-        );
-
-      case "resources":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                Показано 0 из 0 ресурсов
-              </div>
-              <div className="flex space-x-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Поиск ресурсов..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
+            
+            {/* Статистика по категориям */}
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Статистика по категориям
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-blue-600">{categories.length}</div>
+                  <div className="text-sm text-gray-600">Всего категорий</div>
                 </div>
-                <select
-                  value={sessionType}
-                  onChange={(e) => setSessionType(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {typeOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={difficulty}
-                  onChange={(e) => setDifficulty(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {difficultyOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-green-600">
+                    {courses.filter(c => categories.includes(c.category)).length}
+                  </div>
+                  <div className="text-sm text-gray-600">Курсов в категориях</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-gray-200">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {categories.length > 0 
+                      ? Math.round(courses.filter(c => categories.includes(c.category)).length / categories.length)
+                      : 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Среднее курсов на категорию</div>
+                </div>
               </div>
             </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
-            <div className="text-center py-12">
-              <p className="text-gray-500">Ресурсы будут доступны в следующем обновлении</p>
-            </div>
-          </div>
-        );
-
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "courses":
+        return renderCoursesTab();
+      case "categories":
+        return renderCategoriesTab();
       default:
         return null;
     }
@@ -671,68 +633,75 @@ export default function SkillsLearningPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Заголовок страницы */}
+      {/* Заголовок страницы с кнопками */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <BookOpen className="w-8 h-8 mr-3" />
-            Навыки и обучение
+            Курсы и категории
           </h1>
           <p className="text-gray-600 mt-1">
-            Управление навыками и обучением
+            Управление курсами и их категориями
           </p>
         </div>
-        <ActionButton
-          type="add"
-          onClick={handleAddSkill}
-          variant="solid"
-          size="md"
-          showLabels={true}
-        >
-          Добавить навык
-        </ActionButton>
+        <div className="flex space-x-3">
+          <button
+            onClick={handleAddCategory}
+            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Добавить категорию
+          </button>
+          <button
+            onClick={handleAddCourse}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Создать курс
+          </button>
+        </div>
       </div>
 
       {/* Статистические карточки */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
-          title="Всего навыков"
-          value={stats.totalSkills.toString()}
-          subtitle="Всего навыков"
+          title="Всего курсов"
+          value={stats.totalCourses.toString()}
+          subtitle="В каталоге"
           icon={<BookOpen className="w-6 h-6" />}
           color="blue"
           trend={{ isPositive: true, value: "8" }}
         />
         <StatCard
-          title="Активные ученики"
-          value={stats.activeLearners.toString()}
-          subtitle="Активные ученики"
-          icon={<Users className="w-6 h-6" />}
+          title="Категорий"
+          value={categories.length.toString()}
+          subtitle="Уникальных"
+          icon={<Folder className="w-6 h-6" />}
           color="green"
-          trend={{ isPositive: true, value: "12" }}
+          trend={{ isPositive: true, value: "2" }}
         />
         <StatCard
-          title="Часы обучения"
-          value={stats.studyHours.toString()}
-          subtitle="Часы обучения"
-          icon={<Clock className="w-6 h-6" />}
+          title="Общая выручка"
+          value={`${stats.totalRevenue.toLocaleString('ru-RU')} ₽`}
+          subtitle="Общий доход"
+          icon={<DollarSign className="w-6 h-6" />}
           color="amber"
-          trend={{ isPositive: true, value: "8" }}
+          trend={{ isPositive: true, value: "8%" }}
         />
         <StatCard
-          title="Ресурсы"
-          value={stats.resources.toString()}
-          subtitle="Учебные ресурсы"
-          icon={<FileText className="w-6 h-6" />}
+          title="Средний рейтинг"
+          value={stats.avgRating.toFixed(1)}
+          subtitle="По всем курсам"
+          icon={<Star className="w-6 h-6" />}
           color="purple"
-          trend={{ isPositive: true, value: "15" }}
+          trend={{ isPositive: true, value: "+0.2" }}
         />
       </div>
 
       {/* Основной контент с табами */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
         {/* Навигация табами */}
-        <Tabs tabs={tabs} defaultTab="skills" onTabChange={setActiveTab} />
+        <Tabs tabs={tabs} defaultTab="courses" onTabChange={setActiveTab} />
 
         {/* Контент табов */}
         <div className="mt-6">
@@ -741,19 +710,30 @@ export default function SkillsLearningPage() {
       </div>
 
       {/* Модальные окна */}
-      <SkillModal
-        isOpen={isSkillModalOpen}
-        onClose={handleCloseSkillModal}
-        skill={editingSkill}
-        onSuccess={handleSkillSuccess}
+      <CourseModal
+        isOpen={isCourseModalOpen}
+        onClose={handleCloseCourseModal}
+        course={editingCourse}
+        onSuccess={handleCourseSuccess}
+      />
+
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={handleCloseCategoryModal}
+        category={editingCategory}
+        onSuccess={handleCategorySuccess}
       />
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
-        title="Удаление навыка"
-        message={`Вы уверены, что хотите удалить навык "${deletingSkill?.name}"? Это действие нельзя отменить.`}
+        title={deletingCourse ? "Удаление курса" : "Удаление категории"}
+        message={
+          deletingCourse 
+            ? `Вы уверены, что хотите удалить курс "${deletingCourse?.title}"? Это действие нельзя отменить.`
+            : `Вы уверены, что хотите удалить категорию "${deletingCategory}"? Все курсы этой категории останутся без категории.`
+        }
         confirmLabel="Удалить"
         cancelLabel="Отмена"
         variant="delete"

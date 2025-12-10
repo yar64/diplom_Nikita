@@ -28,11 +28,15 @@ model User {
   sessions             StudySession[]
   goals                Goal[]
   stats                UserStats?
-  givenReviews         Review[]          @relation("GivenReviews")
-  receivedReviews      Review[]          @relation("ReceivedReviews")
   notifications        Notification[]
   communityMemberships CommunityMember[]
   communityPosts       CommunityPost[]
+
+  // Курсы - НОВОЕ
+  authoredCourses      Course[]           @relation("AuthoredCourses")
+  courseEnrollments    CourseEnrollment[]
+  courseReviews        CourseReview[]
+  courseProgress       CourseProgress[]   // Добавлено
 
   // Настройки
   settings             UserSettings?
@@ -48,11 +52,198 @@ model User {
   quizAttempts QuizAttempt[]
   badges       UserBadge[]
   notes        StudyNote[]
+  sessionsAuth Session[]                  // Добавлено
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+// НОВАЯ МОДЕЛЬ: Курсы
+model Course {
+  id                 String              @id @default(cuid())
+  
+  // Основная информация
+  title              String              // "React с нуля до PRO"
+  description        String?             // "Полный курс по React..."
+  excerpt            String?             // Короткое описание для карточек
+  
+  // Мультимедиа
+  thumbnailUrl       String?             // Основное изображение курса
+  
+  // Категоризация
+  category          String              // "Программирование"
+  tags              String              // ["Популярный", "React", "Frontend"] как строка
+  
+  // Статистика
+  averageRating      Float               @default(0)    // 4.8
+  totalReviews       Int                 @default(0)    // 1250
+  totalStudents      Int                 @default(0)    // 1250 студентов
+  totalLessons       Int                 @default(0)    // Общее количество уроков
+  
+  // Цена
+  price              Float?              // 12900 (если null - бесплатный)
+  originalPrice      Float?              // Старая цена для скидки
+  discountPercent    Int?                // Процент скидки
+  isFree             Boolean             @default(false)
+  
+  // Состояние
+  status             CourseStatus        @default(DRAFT)
+  isFeatured         Boolean             @default(false)
+  level              Difficulty          @default(BEGINNER)
+  language           String              @default("ru")
+  duration           Int?                // Общая длительность в минутах
+  
+  // Инструктор
+  instructorId       String
+  instructor         User                @relation("AuthoredCourses", fields: [instructorId], references: [id], onDelete: Restrict)
+  
+  // Содержимое
+  chapters           CourseChapter[]
+  enrollments        CourseEnrollment[]
+  reviews            CourseReview[]
+  courseSkills       CourseSkill[]       // Связь с навыками
+  goals              Goal[]              // Добавлено
+  notifications      Notification[]      // Добавлено
+  quizzes            Quiz[]              // Добавлено
+  
+  // Метаданные
+  slug               String              @unique
+  
+  // Временные метки
+  publishedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  
+  @@map("courses")
+}
+
+// НОВАЯ МОДЕЛЬ: Глава курса
+model CourseChapter {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     CourseLesson[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  @@map("course_chapters")
+}
+
+// НОВАЯ МОДЕЛЬ: Урок курса
+model CourseLesson {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  chapterId   String
+  chapter     CourseChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+  // Контент
+  contentType LessonContentType @default(VIDEO)
+  videoUrl    String?
+  duration    Int?             // Длительность в минутах
+  content     String?          // Текст/HTML контент
+  
+  // Доступ
+  isPreview   Boolean         @default(false)
+  
+  // Отношения
+  courseProgress CourseProgress[]  // Добавлено
+  quizzes        Quiz[]            // Добавлено
+  studyNotes     StudyNote[]       // Добавлено
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@map("course_lessons")
+}
+
+// НОВАЯ МОДЕЛЬ: Отзыв на курс
+model CourseReview {
+  id          String   @id @default(cuid())
+  rating      Int      // Оценка 1-5 (валидация на уровне приложения)
+  title       String?
+  content     String?
+  userId      String
+  courseId    String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  isVerified  Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, courseId])
+  @@map("course_reviews")
+}
+
+// НОВАЯ МОДЕЛЬ: Запись на курс
+model CourseEnrollment {
+  id               String           @id @default(cuid())
+  userId           String
+  courseId         String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  // Прогресс
+  progress         Float            @default(0)
+  completedLessons Int              @default(0)
+  isCompleted      Boolean          @default(false)
+  completedAt      DateTime?
+  
+  // Покупка
+  purchasedAt      DateTime         @default(now())
+  
+  // Связь с учебным планом
+  studyPlanId      String?
+  studyPlan        StudyPlan?       @relation(fields: [studyPlanId], references: [id], onDelete: SetNull)
+  
+  // Отношения
+  courseProgress   CourseProgress[]  // Добавлено
+  studySessions    StudySession[]    // Добавлено
+  
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  
+  @@unique([userId, courseId])
+  @@map("course_enrollments")
+}
+
+// НОВАЯ МОДЕЛЬ: Прогресс по уроку
+model CourseProgress {
+  id           String           @id @default(cuid())
+  userId       String
+  lessonId     String
+  enrollmentId String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson       CourseLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  enrollment   CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  
+  isCompleted  Boolean          @default(false)
+  completedAt  DateTime?
+  timeSpent    Int              @default(0) // в секундах
+  
+  @@unique([enrollmentId, lessonId])
+  @@map("course_progress")
+}
+
+// НОВАЯ МОДЕЛЬ: Связь курса и навыков
+model CourseSkill {
+  id        String  @id @default(cuid())
+  courseId  String
+  skillId   String
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, skillId])
+  @@map("course_skills")
 }
 
 model Skill {
@@ -62,10 +253,16 @@ model Skill {
   category          String
   icon              String?
   difficulty        Difficulty          @default(BEGINNER)
+  
+  // Обновленные отношения
   goals             Goal[]
   levelSystems      LevelSystem[]
   quizzes           Quiz[]
   goalSkills        GoalSkill[]
+  userSkills        UserSkill[]
+  projectSkills     ProjectSkill[]
+  courseSkills      CourseSkill[]       // НОВОЕ
+  learningMilestones LearningMilestone[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,12 +281,10 @@ model UserSkill {
   goalDate   DateTime?
   progress   Float          @default(0)
 
-  // Relations
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill      Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
   sessions   StudySession[]
   notes      StudyNote[]
-  studyPlans StudyPlan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -168,6 +363,11 @@ model StudySession {
   efficiency  Int?
   userId      String
   userSkillId String
+  
+  // НОВОЕ: связь с курсами
+  courseEnrollmentId String?
+  courseEnrollment   CourseEnrollment? @relation(fields: [courseEnrollmentId], references: [id], onDelete: SetNull)
+  
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   userSkill   UserSkill   @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
@@ -186,7 +386,10 @@ model Goal {
   userId      String
   skillId     String?
 
-  // Relations
+  // НОВОЕ: связь с курсами
+  courseId    String?
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill      Skill?      @relation(fields: [skillId], references: [id], onDelete: Cascade)
   goalSkills GoalSkill[]
@@ -210,38 +413,6 @@ model GoalSkill {
   @@map("goal_skills")
 }
 
-model LearningResource {
-  id          String       @id @default(cuid())
-  title       String
-  description String?
-  url         String
-  type        ResourceType
-  difficulty  Difficulty
-  duration    Int?
-  rating      Float?
-  skillId     String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  skill       Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
-  @@map("learning_resources")
-}
-
-model Review {
-  id         String   @id @default(cuid())
-  title      String
-  content    String
-  rating     Int
-  reviewerId String
-  revieweeId String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  reviewee   User     @relation("ReceivedReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
-  reviewer   User     @relation("GivenReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
-
-  @@map("reviews")
-}
-
 model Notification {
   id        String           @id @default(cuid())
   title     String
@@ -249,6 +420,11 @@ model Notification {
   type      NotificationType
   isRead    Boolean          @default(false)
   userId    String
+  
+  // НОВОЕ: уведомления о курсах
+  courseId  String?
+  course    Course?          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
   createdAt DateTime         @default(now())
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -267,8 +443,11 @@ model UserStats {
   monthlyProgress Float  @default(0)
   badgesEarned    Int    @default(0)
   quizzesPassed   Int    @default(0)
+  
+  // НОВОЕ: статистика по курсам
+  coursesEnrolled  Int    @default(0)
+  coursesCompleted Int    @default(0)
 
-  // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   updatedAt DateTime @updatedAt
@@ -336,10 +515,11 @@ model StudyPlan {
   endTime     DateTime
   isCompleted Boolean  @default(false)
   userId      String
-  userSkillId String?
+
+  // НОВОЕ: связь с курсами
+  courseEnrollments CourseEnrollment[]
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userSkill UserSkill? @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -358,7 +538,13 @@ model Quiz {
   timeLimit   Int?
   maxAttempts Int        @default(3)
 
+  // НОВОЕ: связь с курсами
+  courseId    String?
+  lessonId    String?
+  
   skill        Skill         @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  course       Course?       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson       CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   quizAttempts QuizAttempt[]
 
   createdAt DateTime @default(now())
@@ -420,6 +606,10 @@ model StudyNote {
   userId      String
   userSkillId String
 
+  // НОВОЕ: заметки для уроков курса
+  lessonId    String?
+  lesson      CourseLesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userSkill UserSkill @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
 
@@ -449,7 +639,6 @@ model UserSettings {
   communityUpdates    Boolean @default(true)
 
   defaultDifficulty     Difficulty   @default(BEGINNER)
-  preferredResourceType ResourceType @default(VIDEO)
   autoGenerateGoals     Boolean      @default(false)
   studyReminders        Boolean      @default(true)
   reminderTime          String?      @default("20:00")
@@ -531,7 +720,6 @@ model UserAppearanceSettings {
   sidebarCollapsed Boolean  @default(false)
   showAvatars      Boolean  @default(true)
   compactView      Boolean  @default(false)
-  denseTables      Boolean  @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -550,7 +738,6 @@ model UserLearningPreferences {
   weeklyStudyGoal     Int           @default(300)
   maxSessionDuration  Int           @default(120)
 
-  preferredResourceTypes Json?
   videoPlaybackSpeed     Float   @default(1.0)
   autoPlayVideos         Boolean @default(true)
   showTranscripts        Boolean @default(true)
@@ -567,7 +754,6 @@ model UserLearningPreferences {
   showProgressCharts  Boolean @default(true)
   celebrateMilestones Boolean @default(true)
   shareAchievements   Boolean @default(true)
-  topicsOfInterest    Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -642,6 +828,22 @@ model Session {
   @@index([token])
 }
 
+// НОВЫЕ ENUM
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LessonContentType {
+  VIDEO
+  ARTICLE
+  QUIZ
+  EXERCISE
+  TEXT
+}
+
+// Существующие enum (оставляем)
 enum UserRole {
   USER
   ADMIN
@@ -680,18 +882,6 @@ enum SessionType {
   EXAM
 }
 
-enum ResourceType {
-  ARTICLE
-  VIDEO
-  COURSE
-  DOCUMENTATION
-  BOOK
-  TUTORIAL
-  EXERCISE
-  PODCAST
-  CHEATSHEET
-}
-
 enum NotificationType {
   GOAL_REMINDER
   MILESTONE_ACHIEVED
@@ -705,6 +895,8 @@ enum NotificationType {
   SYSTEM_ALERT
   BADGE_EARNED
   QUIZ_COMPLETED
+  COURSE_ENROLLMENT  // НОВОЕ
+  COURSE_COMPLETION  // НОВОЕ
 }
 
 enum CommunityRole {
@@ -774,6 +966,7 @@ enum BadgeCategory {
   SKILL
   TIME
   SPECIAL
+  COURSE  // НОВОЕ
 }
 
 enum Rarity {
