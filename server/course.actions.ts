@@ -334,7 +334,7 @@ export async function createCourse(data: CourseFormData, instructorId: string) {
         excerpt: data.excerpt,
         thumbnailUrl: data.thumbnailUrl,
         category: data.category,
-        tags: data.tags,
+        tags: Array.isArray(data.tags) ? data.tags.join(', ') : data.tags || '',
         price: data.isFree ? null : data.price,
         originalPrice: data.originalPrice,
         discountPercent: data.discountPercent,

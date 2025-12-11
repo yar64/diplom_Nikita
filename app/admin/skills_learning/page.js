@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
 import { 
@@ -26,7 +26,7 @@ import { CourseModal } from "../../../components/admin/ui/modals/CourseModal";
 import { CategoryModal } from "../../../components/admin/ui/modals/CategoryModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
 import { getCourses, deleteCourse, getCourseCategories, getPopularCourses } from "../../../server/course.actions";
-import { getMyCourses, enrollInCourse } from "../../../server/course-progress.actions";
+import { enrollInCourse } from "../../../server/course-progress.actions";
 
 const tabs = [
   { id: "courses", label: "Курсы", icon: <BookOpen className="w-4 h-4" /> },
@@ -60,7 +60,7 @@ export default function CoursesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [level, setLevel] = useState("");
-  const [status, setStatus] = useState("PUBLISHED");
+  const [status, setStatus] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   
   const [courses, setCourses] = useState([]);
@@ -104,51 +104,81 @@ export default function CoursesPage() {
 
   const loadData = async () => {
     setLoading(true);
+    console.log('Загрузка данных курсов...');
+    
     try {
       if (activeTab === "courses") {
         const filters = {
           status: status,
-          category,
-          level: level,
+          category: category || undefined,
+          level: level || undefined,
           search: search || undefined,
+          page: 1,
+          limit: 50
         };
 
+        console.log('Фильтры:', filters);
+        
         const result = await getCourses(filters);
-        if (result.courses) {
+        console.log('Результат загрузки курсов:', result);
+        
+        // ИСПРАВЛЕНИЕ: result.courses вместо result
+        if (result && result.courses) {
           setCourses(result.courses);
+          console.log(`Загружено ${result.courses.length} курсов`);
         } else {
-          console.error("Ошибка загрузки курсов:", result);
+          console.error("Нет курсов в ответе:", result);
+          setCourses([]);
         }
 
         const popularResult = await getPopularCourses(10);
         if (Array.isArray(popularResult)) {
           setPopularCourses(popularResult);
+          console.log(`Загружено ${popularResult.length} популярных курсов`);
+        } else {
+          console.error("Нет популярных курсов:", popularResult);
+          setPopularCourses([]);
         }
       }
       
       await loadStats();
     } catch (error) {
       console.error("Ошибка загрузки данных:", error);
+      setCourses([]);
+      setPopularCourses([]);
     } finally {
       setLoading(false);
+      console.log('Загрузка завершена');
     }
   };
 
   const loadStats = async () => {
     try {
-      const allCourses = await getCourses();
+      const result = await getCourses({ 
+        status: 'PUBLISHED',
+        limit: 1000
+      });
       
-      const totalCourses = allCourses.total || 0;
-      const enrolledStudents = allCourses.courses?.reduce((acc, course) => 
+      console.log('Результат для статистики:', result);
+      
+      if (!result || !result.courses) {
+        console.error('Нет данных для статистики');
+        return;
+      }
+      
+      const totalCourses = result.courses.length || 0;
+      const enrolledStudents = result.courses.reduce((acc, course) => 
         acc + (course.totalStudents || 0), 0
-      ) || 0;
+      );
       
-      const totalRevenue = allCourses.courses?.reduce((acc, course) => 
-        acc + (course.price || 0) * (course.totalStudents || 0), 0
-      ) || 0;
+      const totalRevenue = result.courses.reduce((acc, course) => {
+        const price = course.price || 0;
+        const students = course.totalStudents || 0;
+        return acc + (price * students);
+      }, 0);
       
-      const avgRating = allCourses.courses?.length > 0 
-        ? allCourses.courses.reduce((acc, course) => acc + (course.averageRating || 0), 0) / allCourses.courses.length
+      const avgRating = result.courses.length > 0 
+        ? result.courses.reduce((acc, course) => acc + (course.averageRating || 0), 0) / result.courses.length
         : 0;
 
       setStats({
@@ -157,8 +187,15 @@ export default function CoursesPage() {
         totalRevenue,
         avgRating: parseFloat(avgRating.toFixed(1))
       });
+      
+      console.log('Статистика загружена:', {
+        totalCourses,
+        enrolledStudents,
+        totalRevenue,
+        avgRating
+      });
     } catch (error) {
-      console.error("Ошибка загрузки статистики:", error);
+      console.error('Ошибка загрузки статистики:', error);
     }
   };
 
@@ -178,7 +215,10 @@ export default function CoursesPage() {
   };
 
   const handleCourseSuccess = () => {
-    loadData();
+    console.log('Курс успешно создан/обновлен, обновляю данные...');
+    loadData().then(() => {
+      console.log('Данные обновлены после создания курса');
+    });
   };
 
   const handleAddCategory = () => {
@@ -255,7 +295,7 @@ export default function CoursesPage() {
   };
 
   const renderPrice = (course) => {
-    if (course.isFree) {
+    if (course.isFree || !course.price) {
       return (
         <span className="px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
           Бесплатно
@@ -303,11 +343,11 @@ export default function CoursesPage() {
             <div className="font-semibold text-gray-900 truncate">{course.title}</div>
             <div className="text-sm text-gray-500 flex items-center space-x-2 mt-1">
               <Tag className="w-3 h-3" />
-              <span>{course.category}</span>
+              <span>{course.category || 'Без категории'}</span>
               <span>•</span>
               <span>{course.totalLessons || 0} уроков</span>
               <span>•</span>
-              <span>@{course.instructor?.username || course.instructorId?.substring(0, 8)}</span>
+              <span>@{course.instructor?.username || 'неизвестно'}</span>
             </div>
           </div>
         </div>,
@@ -358,18 +398,23 @@ export default function CoursesPage() {
   };
 
   const getCategoriesTableData = (categoriesList) => {
-    const categoryStats = categoriesList.reduce((acc, category) => {
-      const coursesInCategory = courses.filter(course => course.category === category);
-      acc[category] = {
+    // Рассчитать статистику по категориям
+    const categoryStats = categoriesList.reduce((acc, cat) => {
+      const coursesInCategory = courses.filter(course => course.category === cat);
+      acc[cat] = {
         count: coursesInCategory.length,
         students: coursesInCategory.reduce((sum, course) => sum + (course.totalStudents || 0), 0),
-        revenue: coursesInCategory.reduce((sum, course) => sum + (course.price || 0) * (course.totalStudents || 0), 0)
+        revenue: coursesInCategory.reduce((sum, course) => {
+          const price = course.price || 0;
+          const students = course.totalStudents || 0;
+          return sum + (price * students);
+        }, 0)
       };
       return acc;
     }, {});
 
-    return categoriesList.map((category, index) => {
-      const stats = categoryStats[category] || { count: 0, students: 0, revenue: 0 };
+    return categoriesList.map((cat, index) => {
+      const stats = categoryStats[cat] || { count: 0, students: 0, revenue: 0 };
       
       return [
         <div key={index} className="flex items-center space-x-3">
@@ -377,40 +422,40 @@ export default function CoursesPage() {
             <Folder className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">{category}</div>
+            <div className="font-semibold text-gray-900">{cat}</div>
             <div className="text-sm text-gray-500">{stats.count} курсов</div>
           </div>
         </div>,
-        <div key={`${category}-count`} className="text-center">
+        <div key={`${cat}-count`} className="text-center">
           <div className="text-lg font-bold text-blue-600">{stats.count}</div>
           <div className="text-xs text-gray-500">курсов</div>
         </div>,
-        <div key={`${category}-students`} className="text-center">
+        <div key={`${cat}-students`} className="text-center">
           <div className="text-lg font-bold text-green-600">{stats.students}</div>
           <div className="text-xs text-gray-500">студентов</div>
         </div>,
-        <div key={`${category}-revenue`} className="text-center">
+        <div key={`${cat}-revenue`} className="text-center">
           <div className="text-lg font-bold text-amber-600">{stats.revenue.toLocaleString('ru-RU')} ₽</div>
           <div className="text-xs text-gray-500">доход</div>
         </div>,
         <ActionButton
-          key={`${category}-actions`}
+          key={`${cat}-actions`}
           actions={[
             {
               type: "edit",
-              onClick: () => handleEditCategory(category),
+              onClick: () => handleEditCategory(cat),
             },
             {
               type: "view",
               onClick: () => {
-                setCategory(category);
+                setCategory(cat);
                 setActiveTab("courses");
               },
             },
             {
               type: "delete",
               onClick: () => {
-                setDeletingCategory(category);
+                setDeletingCategory(cat);
                 setIsDeleteModalOpen(true);
               },
             },
@@ -434,18 +479,18 @@ export default function CoursesPage() {
     return (
       <div className="space-y-6">
         {/* Блок популярных курсов */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <BarChart3 className="w-5 h-5 mr-2" />
-                Популярные курсы
-              </h3>
-              <p className="text-sm text-gray-600">Топ курсов по популярности</p>
+        {popularCourses.length > 0 && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                  <BarChart3 className="w-5 h-5 mr-2" />
+                  Популярные курсы
+                </h3>
+                <p className="text-sm text-gray-600">Топ курсов по популярности</p>
+              </div>
             </div>
-          </div>
-          
-          {popularCourses.length > 0 ? (
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {popularCourses.slice(0, 3).map(course => (
                 <div key={course.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -482,19 +527,15 @@ export default function CoursesPage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-4 text-gray-500">
-              Нет популярных курсов
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Фильтры и поиск */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="text-sm text-gray-600">
             Показано {courses.length} курсов
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-col md:flex-row gap-3">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -537,6 +578,12 @@ export default function CoursesPage() {
             <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Курсы не найдены</h3>
             <p className="text-gray-500 mb-6">Попробуйте изменить параметры фильтрации</p>
+            <button
+              onClick={handleAddCourse}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Создать первый курс
+            </button>
           </div>
         ) : (
           <Table
@@ -564,6 +611,13 @@ export default function CoursesPage() {
           <div className="text-sm text-gray-600">
             {categories.length} категорий
           </div>
+          <button
+            onClick={handleAddCategory}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Добавить категорию
+          </button>
         </div>
 
         {categories.length === 0 ? (
@@ -571,6 +625,12 @@ export default function CoursesPage() {
             <Folder className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Категории не найдены</h3>
             <p className="text-gray-500 mb-6">Создайте первую категорию для ваших курсов</p>
+            <button
+              onClick={handleAddCategory}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Создать категорию
+            </button>
           </div>
         ) : (
           <>
@@ -634,7 +694,7 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Заголовок страницы с кнопками */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
             <BookOpen className="w-8 h-8 mr-3" />
@@ -644,7 +704,7 @@ export default function CoursesPage() {
             Управление курсами и их категориями
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleAddCategory}
             className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors flex items-center"
