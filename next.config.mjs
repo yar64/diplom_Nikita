@@ -1,16 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
   reactCompiler: true,
+
+  // ВАЖНО: УБИРАЕМ ВСЁ ПРО TURBO
+  // Никаких experimental.turbo вообще!
+
+  // Можно даже так:
   experimental: {
-    turbo: {
-      rules: {
-        '*.png': {
-          loaders: ['file-loader'],
-          as: '*.png'
-        }
-      }
+    // Пусто! Никакого turbo!
+  },
+
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.symlinks = false;
     }
+    return config;
   }
 };
 

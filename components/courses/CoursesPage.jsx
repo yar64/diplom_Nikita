@@ -1,145 +1,92 @@
-// components/courses/CoursesPage.jsx
-'use client'
+// components/courses/CoursesPage.jsx - УПРОЩЕННАЯ ВЕРСИЯ
+'use client';
 
-import { useState } from 'react'
-import { Filter, Star, ChevronDown, Search } from 'lucide-react'
-import CourseFilter from './CourseFilter'
-import CourseCard from './CourseCard'
+import { useState, useEffect } from 'react';
+import CourseFilter from './CourseFilter';
+import CourseCard from './CourseCard';
+import { Filter, Search } from 'lucide-react';
 
-export default function CoursesPage() {
+export default function CoursesPageClient({
+    initialCourses = [],
+    initialCategories = []
+}) {
+    const [courses] = useState(initialCourses);
+    const [filteredCourses, setFilteredCourses] = useState(initialCourses);
+
     const [filters, setFilters] = useState({
         rating: null,
         chapters: null,
         price: null,
         category: null,
-    })
+    });
 
-    // Моковые данные для курсов
-    const courses = [
-        {
-            id: 1,
-            title: 'React с нуля до PRO',
-            description: 'Полный курс по React с хуками, контекстом и Next.js',
-            instructor: 'Иван Петров',
-            rating: 4.8,
-            students: 1250,
-            chapters: 15,
-            price: 12900,
-            category: 'Программирование',
-            image: '/course-react.jpg',
-            isFeatured: true,
-        },
-        {
-            id: 2,
-            title: 'UI/UX Дизайн',
-            description: 'Современный дизайн интерфейсов в Figma',
-            instructor: 'Анна Смирнова',
-            rating: 4.9,
-            students: 890,
-            chapters: 12,
-            price: 9900,
-            category: 'Дизайн',
-            image: '/course-design.jpg',
-            isFeatured: true,
-        },
-        {
-            id: 3,
-            title: 'Python для анализа данных',
-            description: 'Pandas, NumPy и визуализация данных',
-            instructor: 'Дмитрий Козлов',
-            rating: 4.7,
-            students: 2100,
-            chapters: 20,
-            price: 14900,
-            category: 'Data Science',
-            image: '/course-python.jpg',
-            isFeatured: false,
-        },
-        {
-            id: 4,
-            title: 'React с нуля до PRO',
-            description: 'Полный курс по React с хуками, контекстом и Next.js',
-            instructor: 'Иван Петров',
-            rating: 4.8,
-            students: 1250,
-            chapters: 15,
-            price: 12900,
-            category: 'Программирование',
-            image: '/course-react.jpg',
-            isFeatured: true,
-        },
-        {
-            id: 5,
-            title: 'UI/UX Дизайн',
-            description: 'Современный дизайн интерфейсов в Figma',
-            instructor: 'Анна Смирнова',
-            rating: 4.9,
-            students: 890,
-            chapters: 12,
-            price: 9900,
-            category: 'Дизайн',
-            image: '/course-design.jpg',
-            isFeatured: true,
-        },
-        {
-            id: 6,
-            title: 'Python для анализа данных',
-            description: 'Pandas, NumPy и визуализация данных',
-            instructor: 'Дмитрий Козлов',
-            rating: 4.7,
-            students: 2100,
-            chapters: 20,
-            price: 14900,
-            category: 'Data Science',
-            image: '/course-python.jpg',
-            isFeatured: false,
-        },
-        {
-            id: 7,
-            title: 'Python для анализа данных',
-            description: 'Pandas, NumPy и визуализация данных',
-            instructor: 'Дмитрий Козлов',
-            rating: 4.7,
-            students: 2100,
-            chapters: 20,
-            price: 14900,
-            category: 'Data Science',
-            image: '/course-python.jpg',
-            isFeatured: false,
-        },
-        // Добавьте больше курсов по аналогии
-    ]
+    useEffect(() => {
+        filterCourses();
+    }, [courses, filters]);
+
+    const filterCourses = () => {
+        let filtered = [...courses];
+
+        if (filters.rating && filters.rating > 0) {
+            filtered = filtered.filter(course => course.rating >= filters.rating);
+        }
+
+        if (filters.category) {
+            filtered = filtered.filter(course => course.category === filters.category);
+        }
+
+        if (filters.price) {
+            switch (filters.price) {
+                case 'free':
+                    filtered = filtered.filter(course => course.isFree || course.price === 0);
+                    break;
+                case 'under5000':
+                    filtered = filtered.filter(course => course.price > 0 && course.price <= 5000);
+                    break;
+                case 'over5000':
+                    filtered = filtered.filter(course => course.price > 5000);
+                    break;
+            }
+        }
+
+        setFilteredCourses(filtered);
+    };
 
     const handleFilterChange = (filterType, value) => {
         setFilters(prev => ({
             ...prev,
             [filterType]: value === prev[filterType] ? null : value
-        }))
-    }
+        }));
+    };
 
-    const filteredCourses = courses.filter(course => {
-        if (filters.rating && course.rating < filters.rating) return false
-        if (filters.chapters && course.chapters < filters.chapters) return false
-        if (filters.category && course.category !== filters.category) return false
-        return true
-    })
+    if (initialCourses.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-4xl mb-4">📚</div>
+                    <h2 className="text-xl font-bold">Нет курсов</h2>
+                    <p className="text-gray-600">Создайте курсы в админке</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-light-accent">
-            {/* Заголовок */}
             <div className="bg-blue-600 text-white py-12">
                 <div className="max-w-7xl mx-auto px-4">
-                    <h1 className="text-4xl font-bold mb-4">Все курсы</h1>
+                    <h1 className="text-4xl font-bold mb-4">
+                        Все курсы ({initialCourses.length})
+                    </h1>
                     <p className="text-lg text-blue-100">
-                        Найдите идеальный курс для развития ваших навыков
+                        Через getSimpleCourses() Server Action
                     </p>
                 </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
-
-                    {/* Левая панель - Фильтры */}
+                    {/* Фильтры */}
                     <div className="lg:w-1/4">
                         <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
                             <div className="flex items-center justify-between mb-6">
@@ -147,68 +94,59 @@ export default function CoursesPage() {
                                     <Filter className="w-5 h-5" />
                                     Фильтры
                                 </h2>
-                                <button
-                                    onClick={() => setFilters({})}
-                                    className="text-sm text-blue-600 hover:text-blue-800"
-                                >
-                                    Сбросить все
-                                </button>
                             </div>
 
-                            {/* Компонент фильтра */}
                             <CourseFilter
                                 filters={filters}
                                 onFilterChange={handleFilterChange}
+                                categories={initialCategories}
                             />
                         </div>
                     </div>
 
-                    {/* Правая панель - Курсы */}
+                    {/* Курсы */}
                     <div className="lg:w-3/4">
-                        {/* Панель поиска и сортировки */}
+                        <div className="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">
+                            ✅ Используется Server Action: <code>getSimpleCourses()</code>
+                        </div>
+
                         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            placeholder="Поиск курсов..."
-                                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-gray-600">{filteredCourses.length} курсов</span>
-                                    <select className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500">
-                                        <option>Сортировать по</option>
-                                        <option>Рейтингу</option>
-                                        <option>Цене</option>
-                                        <option>Новизне</option>
-                                    </select>
-                                </div>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Поиск курсов..."
+                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
+                                    onChange={(e) => {
+                                        const search = e.target.value.toLowerCase();
+                                        if (search) {
+                                            const searched = courses.filter(c =>
+                                                c.title.toLowerCase().includes(search) ||
+                                                c.description.toLowerCase().includes(search)
+                                            );
+                                            setFilteredCourses(searched);
+                                        } else {
+                                            setFilteredCourses(courses);
+                                        }
+                                    }}
+                                />
                             </div>
                         </div>
 
-                        {/* Карточки курсов */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredCourses.map(course => (
                                 <CourseCard key={course.id} course={course} />
                             ))}
                         </div>
 
-                        {/* Кнопка "Показать еще" */}
-                        {filteredCourses.length > 6 && (
-                            <div className="text-center mt-8">
-                                <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-800 transition">
-                                    Показать еще
-                                </button>
+                        {filteredCourses.length === 0 && (
+                            <div className="text-center p-8 mt-8 bg-white rounded-xl">
+                                <p className="text-gray-600">Ничего не найдено</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
         </div>
-        
-    )
+    );
 }

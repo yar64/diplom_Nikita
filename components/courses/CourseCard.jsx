@@ -8,6 +8,7 @@ export default function CourseCard({ course }) {
     const router = useRouter();
 
     const formatPrice = (price) => {
+        if (!price && price !== 0) return 'Бесплатно';
         return new Intl.NumberFormat('ru-RU', {
             style: 'currency',
             currency: 'RUB',
@@ -16,16 +17,26 @@ export default function CourseCard({ course }) {
     };
 
     const handleCardClick = (e) => {
-        // Предотвращаем переход при клике на кнопку "Подробнее"
         if (!e.target.closest('a, button')) {
             router.push(`/courses/${course.id}`);
         }
     };
 
     const handleDetailsClick = (e) => {
-        e.stopPropagation(); // Останавливаем всплытие события
+        e.stopPropagation();
         router.push(`/courses/${course.id}`);
     };
+
+    // Рассчитываем цену со скидкой
+    const getDiscountedPrice = () => {
+        if (!course.price || course.isFree) return null;
+        if (course.discountPercent) {
+            return course.price * (1 - course.discountPercent / 100);
+        }
+        return null;
+    };
+
+    const discountedPrice = getDiscountedPrice();
 
     return (
         <div
@@ -35,10 +46,18 @@ export default function CourseCard({ course }) {
             <div className="relative">
                 {/* Картинка курса */}
                 <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
-                    <div className="text-center">
-                        <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
-                        <span className="text-lg font-semibold text-gray-800">{course.category}</span>
-                    </div>
+                    {course.thumbnailUrl ? (
+                        <img
+                            src={course.thumbnailUrl}
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="text-center">
+                            <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-2 group-hover:scale-110 transition-transform duration-300" />
+                            <span className="text-lg font-semibold text-gray-800">{course.category}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Бейдж "Популярный" */}
@@ -49,9 +68,16 @@ export default function CourseCard({ course }) {
                 )}
 
                 {/* Бейдж скидки */}
-                {course.discountPrice && (
+                {course.discountPercent && (
                     <div className="absolute top-4 right-4 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                        -{Math.round((1 - course.discountPrice / course.price) * 100)}%
+                        -{course.discountPercent}%
+                    </div>
+                )}
+
+                {/* Бейдж "Бесплатно" */}
+                {course.isFree && (
+                    <div className="absolute top-4 right-4 bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                        Бесплатно
                     </div>
                 )}
             </div>
@@ -65,14 +91,21 @@ export default function CourseCard({ course }) {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                            <span className="font-semibold ml-1">{course.rating}</span>
-                            <span className="text-gray-500 text-sm">({course.reviews || course.students})</span>
+                            <span className="font-semibold ml-1">{course.rating || 0}</span>
+                            <span className="text-gray-500 text-sm">
+                                ({course.reviews || course.students || 0})
+                            </span>
                         </div>
                         <div className="flex flex-col items-end">
-                            {course.discountPrice ? (
+                            {/* Отображение цены */}
+                            {course.isFree ? (
+                                <span className="font-bold text-lg text-green-600">
+                                    Бесплатно
+                                </span>
+                            ) : discountedPrice ? (
                                 <>
                                     <span className="font-bold text-lg text-red-600">
-                                        {formatPrice(course.discountPrice)}
+                                        {formatPrice(discountedPrice)}
                                     </span>
                                     <span className="text-gray-400 text-sm line-through">
                                         {formatPrice(course.price)}
@@ -89,18 +122,18 @@ export default function CourseCard({ course }) {
 
                 {/* Описание */}
                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {course.description}
+                    {course.description || 'Описание отсутствует'}
                 </p>
 
                 {/* Информация о курсе */}
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-6">
                     <div className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        <span>{course.students.toLocaleString()} студентов</span>
+                        <span>{(course.students || 0).toLocaleString()} студентов</span>
                     </div>
                     <div className="flex items-center gap-1">
                         <BookOpen className="w-4 h-4" />
-                        <span>{course.chapters} глав</span>
+                        <span>{course.chapters || 0} глав</span>
                     </div>
                 </div>
 
@@ -112,7 +145,7 @@ export default function CourseCard({ course }) {
                         </div>
                         <div>
                             <p className="text-xs text-gray-500">Инструктор</p>
-                            <p className="font-medium text-sm">{course.instructor}</p>
+                            <p className="font-medium text-sm">{course.instructor || 'Не указан'}</p>
                         </div>
                     </div>
                     <button

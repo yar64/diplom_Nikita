@@ -861,3 +861,52 @@ export async function updateCourseStats(courseId: string) {
     throw new Error('Не удалось обновить статистику курса')
   }
 }
+
+// ПРОСТАЯ ВЕРСИЯ - ВСЕ курсы (без фильтра по статусу)
+export async function getSimpleCourses() {
+  try {
+    const courses = await prisma.course.findMany({
+      where: {}, // ← ПУСТОЙ where, БЕЗ ФИЛЬТРА ПО СТАТУСУ!
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        category: true,
+        price: true,
+        isFree: true,
+        averageRating: true,
+        totalStudents: true,
+        instructor: {
+          select: {
+            username: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      take: 10 // ограничиваем для теста
+    });
+
+    return {
+      courses: courses.map(c => ({
+        id: c.id,
+        title: c.title || 'Без названия',
+        description: c.description || '',
+        category: c.category || 'Без категории',
+        price: c.price || 0,
+        isFree: c.isFree || false,
+        averageRating: c.averageRating || 0,
+        totalStudents: c.totalStudents || 0,
+        instructor: c.instructor ? {
+          username: c.instructor.username || 'Не указан',
+          firstName: c.instructor.firstName || '',
+          lastName: c.instructor.lastName || ''
+        } : { username: 'Не указан', firstName: '', lastName: '' }
+      })),
+      total: courses.length
+    };
+  } catch (error) {
+    console.error('Simple courses error:', error);
+    return { courses: [], total: 0 };
+  }
+}
