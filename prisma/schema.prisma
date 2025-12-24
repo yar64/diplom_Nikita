@@ -52,13 +52,34 @@ model User {
   quizAttempts QuizAttempt[]
   badges       UserBadge[]
   notes        StudyNote[]
-  sessionsAuth Session[]                  // Добавлено
+  sessionsAuth Session[]           
+  workExperiences WorkExperience[]       // Добавлено
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
 }
+
+model WorkExperience {
+  id          String   @id @default(cuid())
+  userId      String
+  company     String
+  position    String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean  @default(false)
+  location    String?
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("work_experiences")
+}
+
 
 // НОВАЯ МОДЕЛЬ: Курсы
 model Course {
