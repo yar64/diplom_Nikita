@@ -190,3 +190,13 @@
 .animate-slide-up:not(.opacity-0) {
   opacity: 1 !important;
 }
+
+/* Улучшить рендеринг границ */
+* {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+
+
+

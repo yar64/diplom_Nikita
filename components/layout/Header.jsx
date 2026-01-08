@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Search, X, Menu, LogIn, UserPlus, User, LogOut } from 'lucide-react'
+import { Search, X, Menu, LogIn, UserPlus, User, LogOut, Users } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 
 export default function Header() {
@@ -11,15 +11,6 @@ export default function Header() {
     const [searchQuery, setSearchQuery] = useState('')
     const router = useRouter()
     const { user, logout } = useAuth()
-
-    // УДАЛИТЕ этот useEffect, так как user уже управляется AuthContext
-    // useEffect(() => {
-    //     // Проверяем авторизацию при загрузке
-    //     const userData = localStorage.getItem('user')
-    //     if (userData) {
-    //         setUser(JSON.parse(userData)) // ← ОШИБКА: setUser не определен
-    //     }
-    // }, [])
 
     const handleLoginClick = () => {
         router.push('/login')
@@ -31,6 +22,10 @@ export default function Header() {
 
     const handleProfileClick = () => {
         router.push('/profile')
+    }
+
+    const handleInstructorsClick = () => {
+        router.push('/instructors')
     }
 
     const handleLogout = () => {
@@ -59,6 +54,9 @@ export default function Header() {
                             <Link href="/courses" className="text-gray-700 hover:text-blue-600 font-medium">
                                 Курсы
                             </Link>
+                            <Link href="/instructors" className="text-gray-700 hover:text-blue-600 font-medium">
+                                Преподаватели
+                            </Link>
                             <Link href="/about" className="text-gray-700 hover:text-blue-600 font-medium">
                                 О нас
                             </Link>
@@ -71,12 +69,12 @@ export default function Header() {
                     {/* Правая часть */}
                     <div className="flex items-center space-x-4">
                         {/* Поиск */}
-                        <form onSubmit={handleSearch} className="hidden lg:flex items-center space-x-3 bg-gradient-to-r from-blue-100  px-4 py-2 rounded-full border border-blue-100 hover:border-blue-200 transition-colors min-w-[300px]">
+                        <form onSubmit={handleSearch} className="hidden lg:flex items-center space-x-3 bg-gradient-to-r from-blue-100 px-4 py-2 rounded-full border border-blue-100 hover:border-blue-200 transition-colors min-w-[300px]">
                             <div className="flex items-center space-x-2 flex-1">
                                 <Search className="w-4 h-4 text-blue-500 flex-shrink-0" />
                                 <input
                                     type="text"
-                                    placeholder="Найти курсы, навыки, технологии..."
+                                    placeholder="Найти курсы, преподавателей, навыки..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="bg-transparent border-none outline-none text-sm text-gray-700 placeholder-gray-500 w-full"
@@ -93,6 +91,15 @@ export default function Header() {
                             )}
                             <button type="submit" className="hidden">Найти</button>
                         </form>
+
+                        {/* Кнопка преподавателей для мобильных */}
+                        <Link
+                            href="/instructors"
+                            className="md:hidden flex items-center p-2 text-gray-700 hover:text-blue-600"
+                            title="Преподаватели"
+                        >
+                            <Users className="w-5 h-5" />
+                        </Link>
 
                         {/* Кнопки авторизации или профиль */}
                         <div className="flex gap-3 items-center">
@@ -154,51 +161,82 @@ export default function Header() {
                             <Search className="w-4 h-4 text-blue-500 mr-2" />
                             <input
                                 type="text"
-                                placeholder="Поиск курсов..."
+                                placeholder="Поиск курсов, преподавателей..."
                                 className="bg-transparent outline-none text-sm w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </form>
 
-                        <Link href="/courses" className="block px-4 text-gray-700 hover:text-blue-600">
-                            Курсы
+                        <Link
+                            href="/courses"
+                            className="flex items-center px-4 text-gray-700 hover:text-blue-600"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            📚 Курсы
                         </Link>
-                        <Link href="/about" className="block px-4 text-gray-700 hover:text-blue-600">
-                            О нас
+                        <Link
+                            href="/instructors"
+                            className="flex items-center px-4 text-gray-700 hover:text-blue-600"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            👨‍🏫 Преподаватели
                         </Link>
-                        <Link href="/contact" className="block px-4 text-gray-700 hover:text-blue-600">
-                            Контакты
+                        <Link
+                            href="/about"
+                            className="flex items-center px-4 text-gray-700 hover:text-blue-600"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            ℹ️ О нас
+                        </Link>
+                        <Link
+                            href="/contact"
+                            className="flex items-center px-4 text-gray-700 hover:text-blue-600"
+                            onClick={() => setIsMenuOpen(false)}
+                        >
+                            📞 Контакты
                         </Link>
 
                         {user ? (
                             <>
                                 <button
-                                    onClick={handleProfileClick}
-                                    className="block w-full text-left px-4 text-gray-700 hover:text-blue-600"
+                                    onClick={() => {
+                                        handleProfileClick();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="flex items-center w-full text-left px-4 text-gray-700 hover:text-blue-600"
                                 >
-                                    Профиль
+                                    👤 Профиль
                                 </button>
                                 <button
-                                    onClick={handleLogout}
-                                    className="block w-full text-left px-4 text-gray-700 hover:text-red-600"
+                                    onClick={() => {
+                                        handleLogout();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="flex items-center w-full text-left px-4 text-gray-700 hover:text-red-600"
                                 >
-                                    Выйти
+                                    🚪 Выйти
                                 </button>
                             </>
                         ) : (
                             <>
                                 <button
-                                    onClick={handleLoginClick}
-                                    className="block w-full text-left px-4 text-gray-700 hover:text-blue-600"
+                                    onClick={() => {
+                                        handleLoginClick();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="flex items-center w-full text-left px-4 text-gray-700 hover:text-blue-600"
                                 >
-                                    Войти
+                                    🔑 Войти
                                 </button>
                                 <button
-                                    onClick={handleRegisterClick}
-                                    className="block mx-4 text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                    onClick={() => {
+                                        handleRegisterClick();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="flex items-center justify-center mx-4 text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                                 >
-                                    Регистрация
+                                    📝 Регистрация
                                 </button>
                             </>
                         )}
