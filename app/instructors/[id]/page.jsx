@@ -1,7 +1,19 @@
+// app/instructors/[id]/page.jsx - ОБНОВЛЕННАЯ ВЕРСИЯ
 import { notFound } from 'next/navigation';
-import { getInstructorById, getInstructorStats, getInstructorCourses } from '../../../server/instructor.actions';
-import { User, Mail, Globe, Briefcase, Star, Users, BookOpen } from 'lucide-react';
-import Link from 'next/link';
+import {
+    getInstructorById,
+    getInstructorStats,
+    getInstructorCourses
+} from '../../../server/instructor.actions';
+import InstructorHeader from '../../../components/instructor/InstructorHeader';
+import InstructorStats from '../../../components/instructor/InstructorStats';
+import InstructorAbout from '../../../components/instructor/InstructorAbout';
+import InstructorExpertise from '../../../components/instructor/InstructorExpertise';
+import InstructorExperience from '../../../components/instructor/InstructorExperience';
+import InstructorCourses from '../../../components/instructor/InstructorCourses';
+import InstructorProjects from '../../../components/instructor/InstructorProjects';
+import InstructorReviews from '../../../components/instructor/InstructorReviews';
+import InstructorAchievements from '../../../components/instructor/InstructorAchievements';
 
 export default async function InstructorPage({ params }) {
     try {
@@ -31,127 +43,29 @@ export default async function InstructorPage({ params }) {
             totalStudents: 0,
             totalReviews: 0,
             totalCourses: 0,
-            averageRating: 0
+            averageRating: 0,
+            totalLessons: 10
         };
 
         const coursesData = courses.status === 'fulfilled' ? courses.value : [];
 
         const fullName = `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || instructor.email;
 
+        // Заглушки для отзывов и достижений (можно потом заменить на реальные данные)
+        // Если будут реальные данные, передаем их в компоненты
+        // Если нет - компоненты покажут свои дефолтные данные
+        const reviewsData = []; // Здесь будут реальные отзывы из БД
+        const achievementsData = []; // Здесь будут реальные достижения из БД
+
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-light-bg">
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     {/* Header */}
-                    <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-                        <div className="flex flex-col md:flex-row items-start gap-6">
-                            {/* Avatar */}
-                            <div className="flex-shrink-0">
-                                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center overflow-hidden">
-                                    {instructor.avatar ? (
-                                        <img
-                                            src={instructor.avatar}
-                                            alt={fullName}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <User className="w-20 h-20 text-blue-500" />
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1">
-                                <h1 className="text-3xl font-bold text-gray-900">{fullName}</h1>
-                                <p className="text-lg text-blue-600 font-medium mt-1">
-                                    {instructor.settings?.occupation || instructor.role}
-                                </p>
-
-                                {/* Contact */}
-                                <div className="mt-6 flex flex-wrap gap-4 text-gray-600">
-                                    {instructor.email && (
-                                        <div className="flex items-center space-x-2">
-                                            <Mail className="w-4 h-4" />
-                                            <span>{instructor.email}</span>
-                                        </div>
-                                    )}
-                                    {instructor.settings?.location && (
-                                        <div className="flex items-center space-x-2">
-                                            <Globe className="w-4 h-4" />
-                                            <span>{instructor.settings.location}</span>
-                                        </div>
-                                    )}
-                                    {instructor.settings?.company && (
-                                        <div className="flex items-center space-x-2">
-                                            <Briefcase className="w-4 h-4" />
-                                            <span>{instructor.settings.company}</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Bio */}
-                                {instructor.bio && (
-                                    <p className="mt-4 text-gray-600">{instructor.bio}</p>
-                                )}
-
-                                {/* Tags */}
-                                <div className="mt-6 flex flex-wrap gap-2">
-                                    <span className={`px-3 py-1 text-sm rounded-full ${instructor.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
-                                            instructor.role === 'MENTOR' ? 'bg-green-100 text-green-800' :
-                                                'bg-gray-100 text-gray-700'
-                                        }`}>
-                                        {instructor.role}
-                                    </span>
-                                    {instructor._count?.authoredCourses > 0 && (
-                                        <span className="px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full">
-                                            {instructor._count.authoredCourses} курсов
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <InstructorHeader instructor={instructor} />
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Students</p>
-                                    <p className="text-2xl font-bold text-gray-900">{statsData.totalStudents}</p>
-                                </div>
-                                <Users className="w-8 h-8 text-blue-500" />
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Reviews</p>
-                                    <p className="text-2xl font-bold text-gray-900">{statsData.totalReviews}</p>
-                                </div>
-                                <Star className="w-8 h-8 text-amber-500" />
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Courses</p>
-                                    <p className="text-2xl font-bold text-gray-900">{statsData.totalCourses}</p>
-                                </div>
-                                <BookOpen className="w-8 h-8 text-green-500" />
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm text-gray-500">Rating</p>
-                                    <p className="text-2xl font-bold text-gray-900">{statsData.averageRating}</p>
-                                </div>
-                                <Star className="w-8 h-8 text-purple-500" />
-                            </div>
-                        </div>
+                    <div className="my-8">
+                        <InstructorStats stats={statsData} />
                     </div>
 
                     {/* Main Content */}
@@ -159,90 +73,64 @@ export default async function InstructorPage({ params }) {
                         {/* Left Column */}
                         <div className="lg:col-span-2 space-y-8">
                             {/* About */}
-                            {instructor.bio && (
-                                <div className="bg-white rounded-xl shadow-sm p-6">
-                                    <h2 className="text-xl font-bold text-gray-900 mb-4">About</h2>
-                                    <p className="text-gray-600">{instructor.bio}</p>
-                                </div>
-                            )}
+                            <InstructorAbout bio={instructor.bio} />
 
                             {/* Expertise */}
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Expertise</h2>
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span>User Experience (UX) Design</span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span>User Interface (UI) Design</span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                        <span>Web Development</span>
-                                    </div>
-                                </div>
-                            </div>
+                            <InstructorExpertise expertise={instructor.expertise} />
+
+                            {/* Experience */}
+                            <InstructorExperience instructorId={id} />
+
+                            {/* Projects */}
+                            <InstructorProjects projects={instructor.projects} />
+
+                            {/* Achievements */}
+                            <InstructorAchievements
+                                achievements={achievementsData}
+                            />
+
+                            {/* Reviews */}
+                            <InstructorReviews
+                                reviews={reviewsData}
+                                instructorName={fullName}
+                            />
                         </div>
 
                         {/* Right Column */}
                         <div className="space-y-8">
                             {/* Courses */}
-                            {coursesData.length > 0 && (
-                                <div className="bg-white rounded-xl shadow-sm p-6">
-                                    <h2 className="text-xl font-bold text-gray-900 mb-4">Courses</h2>
-                                    <div className="space-y-4">
-                                        {coursesData.slice(0, 3).map((course) => (
-                                            <Link
-                                                key={course.id}
-                                                href={`/courses/${course.id}`}
-                                                className="block p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                                            >
-                                                <h3 className="font-semibold text-gray-900">{course.title}</h3>
-                                                {course.description && (
-                                                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                                        {course.description}
-                                                    </p>
-                                                )}
-                                                <div className="flex items-center justify-between mt-2">
-                                                    <div className="flex items-center space-x-2 text-sm">
-                                                        <Users className="w-4 h-4" />
-                                                        <span>{course._count?.enrollments || 0} students</span>
-                                                    </div>
-                                                    <span className="text-sm font-semibold">
-                                                        {course.isFree ? 'FREE' : `$${course.price || '0'}`}
-                                                    </span>
-                                                </div>
-                                            </Link>
-                                        ))}
+                            <InstructorCourses
+                                courses={coursesData}
+                                instructorName={fullName}
+                            />
+
+                            {/* Contact Info */}
+                            {instructor.email && (
+                                <div className="bg-light-card rounded-xl shadow-sm p-6">
+                                    <h2 className="text-xl font-bold text-light-text-primary mb-4">Контакты</h2>
+                                    <div className="space-y-3">
+                                        <a
+                                            href={`mailto:${instructor.email}`}
+                                            className="flex items-center space-x-3 text-light-blue-500 hover:text-light-blue-600 transition-colors"
+                                        >
+                                            <span className="text-lg">📧</span>
+                                            <span className="text-sm">{instructor.email}</span>
+                                        </a>
+                                        {instructor.settings?.company && (
+                                            <div className="flex items-center space-x-3 text-light-text-secondary">
+                                                <span className="text-lg">🏢</span>
+                                                <span className="text-sm">{instructor.settings.company}</span>
+                                            </div>
+                                        )}
+                                        {instructor.settings?.location && (
+                                            <div className="flex items-center space-x-3 text-light-text-secondary">
+                                                <span className="text-lg">📍</span>
+                                                <span className="text-sm">{instructor.settings.location}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    {coursesData.length > 3 && (
-                                        <div className="mt-4 text-center">
-                                            <Link
-                                                href={`/courses?instructor=${instructor.id}`}
-                                                className="text-blue-600 hover:underline text-sm"
-                                            >
-                                                View all courses →
-                                            </Link>
-                                        </div>
-                                    )}
                                 </div>
                             )}
-
-                            {/* Contact */}
-                            <div className="bg-white rounded-xl shadow-sm p-6">
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Contact</h2>
-                                {instructor.email && (
-                                    <a
-                                        href={`mailto:${instructor.email}`}
-                                        className="flex items-center space-x-3 text-blue-600 hover:text-blue-800"
-                                    >
-                                        <Mail className="w-5 h-5" />
-                                        <span>{instructor.email}</span>
-                                    </a>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,8 +148,8 @@ export async function generateMetadata({ params }) {
 
         if (!id) {
             return {
-                title: 'Instructor Not Found',
-                description: 'Instructor not found'
+                title: 'Преподаватель не найден',
+                description: 'Преподаватель не найден'
             };
         }
 
@@ -269,21 +157,21 @@ export async function generateMetadata({ params }) {
 
         if (!instructor) {
             return {
-                title: 'Instructor Not Found',
-                description: 'Instructor not found'
+                title: 'Преподаватель не найден',
+                description: 'Преподаватель не найден'
             };
         }
 
         const fullName = `${instructor.firstName || ''} ${instructor.lastName || ''}`.trim() || instructor.email;
 
         return {
-            title: `${fullName} - Instructor`,
-            description: instructor.bio || `Learn from ${fullName}`,
+            title: `${fullName} - Преподаватель | Skills Tracker`,
+            description: instructor.bio || `Обучайтесь у ${fullName}`,
         };
     } catch (error) {
         return {
-            title: 'Instructor Not Found',
-            description: 'Instructor not found'
+            title: 'Преподаватель не найден',
+            description: 'Преподаватель не найден'
         };
     }
 }

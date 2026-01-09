@@ -78,9 +78,6 @@ export default function CoursesPageClient({
                     <h1 className="text-4xl font-bold mb-4">
                         Все курсы ({initialCourses.length})
                     </h1>
-                    <p className="text-lg text-blue-100">
-                        Через getSimpleCourses() Server Action
-                    </p>
                 </div>
             </div>
 
@@ -106,10 +103,6 @@ export default function CoursesPageClient({
 
                     {/* Курсы */}
                     <div className="lg:w-3/4">
-                        <div className="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">
-                            ✅ Используется Server Action: <code>getSimpleCourses()</code>
-                        </div>
-
                         <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
