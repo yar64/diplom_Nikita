@@ -94,7 +94,8 @@ model Course {
   thumbnailUrl       String?             // Основное изображение курса
   
   // Категоризация
-  category          String              // "Программирование"
+  categoryId        String?             // Связь с моделью Category
+  category          Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   tags              String              // ["Популярный", "React", "Frontend"] как строка
   
   // Статистика
@@ -265,6 +266,32 @@ model CourseSkill {
 
   @@unique([courseId, skillId])
   @@map("course_skills")
+}
+
+model Category {
+  id                  String   @id @default(cuid())
+  name                String   @unique
+  slug                String   @unique
+  description         String?
+  color               String   @default("#6366f1")
+  icon                String?
+  isActive            Boolean  @default(true)
+  order               Int      @default(0)
+  seoTitle            String?
+  seoDescription      String?
+  
+  // Статистика
+  coursesCount        Int      @default(0)
+  studentsCount       Int      @default(0)
+  revenue             Float    @default(0)  // Добавляем это поле
+  
+  // Связи
+  courses             Course[]
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("categories")
 }
 
 model Skill {

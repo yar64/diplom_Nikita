@@ -28,7 +28,7 @@ import {
   Bell,
   EyeOff,
   Palette,
-  GraduationCap,
+  GraduationCap,  // ← Уже есть
   Key
 } from "lucide-react";
 import { Table } from "../../../components/admin/share/Table";
@@ -42,14 +42,17 @@ import {
   updateUserRole, 
   deleteUser,
   getSystemSettings,
-  updateSystemSettings,
+  updateSystemSetting,  // Обратите внимание: updateSystemSetting (не updateSystemSettings)
   createSystemSetting,
   getAuditLogs,
   getUserSettings,
   updateUserSettings,
   getSettingsStats,
   cleanupOldData,
-  backupData
+  getSkillsStats,
+  runSystemMaintenance,
+  exportData,
+  backupData  // Теперь эта функция существует
 } from "../../../server/settings.actions";
 import { UserModal } from "../../../components/admin/ui/modals/UserModal";
 import { ConfirmModal } from "../../../components/admin/ui/modals/ConfirmModal";
@@ -228,7 +231,7 @@ export default function AdminSettingsPage() {
     try {
       // Сохраняем каждую настройку отдельно
       const promises = Object.entries(systemSettings).map(([key, setting]) => 
-        updateSystemSettings(key, setting.value)
+        updateSystemSetting(key, setting.value)  // ← Правильное имя функции
       );
       
       const results = await Promise.all(promises);
@@ -465,7 +468,7 @@ export default function AdminSettingsPage() {
                 color="purple"
               />
             </div>
-
+        
             {/* Дополнительная статистика */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <StatCard
@@ -483,14 +486,14 @@ export default function AdminSettingsPage() {
                 color="red"
               />
               <StatCard
-                title="Ресурсов обучения"
-                value={systemStats?.resources?.toString() || "0"}
-                subtitle="Учебных ресурсов"
-                icon={<FileText className="w-6 h-6" />}
+                title="Курсов"
+                value={systemStats?.courses?.toString() || "0"}
+                subtitle="Доступных курсов"
+                icon={<GraduationCap className="w-6 h-6" />}
                 color="emerald"
               />
             </div>
-
+        
             {/* Статистика по настройкам */}
             {settingsStats && (
               <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -529,19 +532,19 @@ export default function AdminSettingsPage() {
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Сессии за последние 7 дней</h4>
                   <p className="text-2xl font-bold text-blue-600">
-                    {systemStats?.recentActivity || 0}
+                    {systemStats?.recentActivity?.sessions || 0}
                   </p>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Новые пользователи (7 дней)</h4>
                   <p className="text-2xl font-bold text-green-600">
-                    {systemStats?.newUsers || 0}
+                    {systemStats?.recentActivity?.newUsers || 0}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Средняя активность</h4>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Завершенные цели (7 дней)</h4>
                   <p className="text-2xl font-bold text-purple-600">
-                    {systemStats?.recentActivity ? Math.round(systemStats.recentActivity / 7) : 0}/день
+                    {systemStats?.recentActivity?.completedGoals || 0}
                   </p>
                 </div>
               </div>
@@ -745,46 +748,25 @@ export default function AdminSettingsPage() {
             {settingsStats && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <StatCard
-                  title="Пользователей с настройками"
-                  value={settingsStats.usersWithGeneral?.toString() || "0"}
-                  subtitle={`${settingsStats.generalPercentage}% от всех`}
-                  icon={<UserCheck className="w-6 h-6" />}
-                  color="blue"
+                  title="Сообществ"
+                  value={systemStats?.communities?.toString() || "0"}
+                  subtitle="Сообществ"
+                  icon={<Users className="w-6 h-6" />}
+                  color="indigo"
                 />
                 <StatCard
-                  title="Настроили уведомления"
-                  value={settingsStats.usersWithNotifications?.toString() || "0"}
-                  subtitle={`${settingsStats.notificationsPercentage}% от всех`}
-                  icon={<Bell className="w-6 h-6" />}
-                  color="green"
+                  title="Целей поставлено"
+                  value={systemStats?.goals?.toString() || "0"}
+                  subtitle="Поставленных целей"
+                  icon={<Target className="w-6 h-6" />}
+                  color="red"
                 />
                 <StatCard
-                  title="Настроили приватность"
-                  value={settingsStats.usersWithPrivacy?.toString() || "0"}
-                  subtitle={`${settingsStats.privacyPercentage}% от всех`}
-                  icon={<EyeOff className="w-6 h-6" />}
-                  color="purple"
-                />
-                <StatCard
-                  title="Настроили внешний вид"
-                  value={settingsStats.usersWithAppearance?.toString() || "0"}
-                  subtitle={`${settingsStats.appearancePercentage}% от всех`}
-                  icon={<Palette className="w-6 h-6" />}
-                  color="amber"
-                />
-                <StatCard
-                  title="Настроили обучение"
-                  value={settingsStats.usersWithLearning?.toString() || "0"}
-                  subtitle={`${settingsStats.learningPercentage}% от всех`}
+                  title="Курсов"
+                  value={systemStats?.courses?.toString() || "0"}  
+                  subtitle="Доступных курсов"
                   icon={<GraduationCap className="w-6 h-6" />}
                   color="emerald"
-                />
-                <StatCard
-                  title="Настроили безопасность"
-                  value={settingsStats.usersWithSecurity?.toString() || "0"}
-                  subtitle={`${settingsStats.securityPercentage}% от всех`}
-                  icon={<Key className="w-6 h-6" />}
-                  color="red"
                 />
               </div>
             )}

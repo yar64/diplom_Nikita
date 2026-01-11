@@ -1,3 +1,4 @@
+// actions/course.actions.ts
 'use server'
 
 import { prisma } from '../prisma/lib/prisma'
@@ -5,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 
 // Типы
 export type CourseFilters = {
-  category?: string
+  category?: string // Теперь это ID категории
   level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT'
   isFeatured?: boolean
   isFree?: boolean
@@ -22,7 +23,7 @@ export type CourseFormData = {
   description?: string
   excerpt?: string
   thumbnailUrl?: string
-  category: string
+  categoryId?: string // Теперь это ID категории
   tags: string
   price?: number
   originalPrice?: number
@@ -41,7 +42,7 @@ export type CourseFormData = {
 export async function getCourses(filters?: CourseFilters) {
   try {
     const {
-      category,
+      category: categoryId,
       level,
       isFeatured,
       isFree,
@@ -58,7 +59,7 @@ export async function getCourses(filters?: CourseFilters) {
     const where: any = {}
 
     // Фильтры
-    if (category) where.category = category
+    if (categoryId) where.categoryId = categoryId
     if (level) where.level = level
     if (isFeatured !== undefined) where.isFeatured = isFeatured
     if (isFree !== undefined) where.isFree = isFree
@@ -71,7 +72,7 @@ export async function getCourses(filters?: CourseFilters) {
       if (maxPrice !== undefined) where.price.lte = maxPrice
     }
     
-    // Поиск (без mode: 'insensitive' для SQLite)
+    // Поиск для SQLite (без mode: 'insensitive')
     if (search) {
       where.OR = [
         { title: { contains: search } },
@@ -85,6 +86,7 @@ export async function getCourses(filters?: CourseFilters) {
     const courses = await prisma.course.findMany({
       where,
       include: {
+        category: true, // Включаем категорию
         instructor: {
           select: {
             id: true,
@@ -156,7 +158,10 @@ export async function getCourses(filters?: CourseFilters) {
         averageRating,
         totalReviews: course._count.reviews,
         totalStudents: course._count.enrollments,
-        totalChapters: course._count.chapters
+        totalChapters: course._count.chapters,
+        // Для обратной совместимости добавляем category как строку
+        categoryName: course.category?.name || '',
+        categoryColor: course.category?.color || '#6366f1'
       }
     })
 
@@ -170,7 +175,13 @@ export async function getCourses(filters?: CourseFilters) {
 
   } catch (error) {
     console.error('Error fetching courses:', error)
-    throw new Error('Не удалось загрузить курсы')
+    return {
+      courses: [],
+      total: 0,
+      page: 1,
+      totalPages: 1,
+      hasMore: false
+    }
   }
 }
 
@@ -178,8 +189,9 @@ export async function getCourses(filters?: CourseFilters) {
 export async function getCourseBySlug(slug: string, userId?: string) {
   try {
     const course = await prisma.course.findUnique({
-      where: { slug, status: 'PUBLISHED' },
+      where: { slug },
       include: {
+        category: true, // Включаем категорию
         instructor: {
           select: {
             id: true,
@@ -242,10 +254,10 @@ export async function getCourseBySlug(slug: string, userId?: string) {
       ? parseFloat((totalRating / reviews.length).toFixed(1))
       : 0
 
-    const totalLessons = course.chapters.reduce((sum, chapter) => sum + chapter.lessons.length, 0)
-    const totalDuration = course.chapters.reduce((sum, chapter) => {
-      return sum + chapter.lessons.reduce((lessonSum, lesson) => lessonSum + (lesson.duration || 0), 0)
-    }, 0)
+    const totalLessons = course.chapters?.reduce((sum, chapter) => sum + (chapter.lessons?.length || 0), 0) || 0
+    const totalDuration = course.chapters?.reduce((sum, chapter) => {
+      return sum + (chapter.lessons?.reduce((lessonSum, lesson) => lessonSum + (lesson.duration || 0), 0) || 0)
+    }, 0) || 0
 
     const userEnrollment = course.enrollments?.[0] || null
 
@@ -258,59 +270,12 @@ export async function getCourseBySlug(slug: string, userId?: string) {
       totalReviews: course._count.reviews,
       totalStudents: course._count.enrollments,
       userEnrollment,
-      skills: course.courseSkills.map(cs => cs.skill)
+      skills: course.courseSkills?.map(cs => cs.skill) || [],
+      categoryName: course.category?.name || ''
     }
 
   } catch (error) {
     console.error('Error fetching course:', error)
-    throw new Error('Не удалось загрузить курс')
-  }
-}
-
-// Получить курс по ID
-export async function getCourseById(id: string) {
-  try {
-    const course = await prisma.course.findUnique({
-      where: { id },
-      include: {
-        instructor: {
-          select: {
-            id: true,
-            username: true,
-            firstName: true,
-            lastName: true
-          }
-        },
-        chapters: {
-          include: {
-            lessons: {
-              orderBy: { order: 'asc' }
-            }
-          },
-          orderBy: { order: 'asc' }
-        },
-        courseSkills: {
-          include: {
-            skill: true
-          }
-        },
-        _count: {
-          select: {
-            reviews: true,
-            enrollments: true
-          }
-        }
-      }
-    })
-
-    if (!course) {
-      throw new Error('Курс не найден')
-    }
-
-    return course
-
-  } catch (error) {
-    console.error('Error fetching course by id:', error)
     throw new Error('Не удалось загрузить курс')
   }
 }
@@ -327,32 +292,44 @@ export async function createCourse(data: CourseFormData, instructorId: string) {
       throw new Error('Курс с таким URL уже существует')
     }
 
+    // Подготовка данных
+    const courseData: any = {
+      title: data.title,
+      description: data.description,
+      excerpt: data.excerpt,
+      thumbnailUrl: data.thumbnailUrl,
+      tags: Array.isArray(data.tags) ? data.tags.join(', ') : data.tags || '',
+      price: data.isFree ? null : data.price,
+      originalPrice: data.originalPrice,
+      discountPercent: data.discountPercent,
+      isFree: data.isFree,
+      level: data.level,
+      language: data.language,
+      duration: data.duration,
+      status: data.status,
+      isFeatured: data.isFeatured,
+      slug: data.slug,
+      instructorId
+    }
+
+    // Если указана категория, добавляем связь
+    if (data.categoryId) {
+      courseData.category = {
+        connect: { id: data.categoryId }
+      }
+    }
+
+    // Если указаны навыки, добавляем их
+    if (data.skillIds && data.skillIds.length > 0) {
+      courseData.courseSkills = {
+        create: data.skillIds.map(skillId => ({ skillId }))
+      }
+    }
+
     const course = await prisma.course.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        excerpt: data.excerpt,
-        thumbnailUrl: data.thumbnailUrl,
-        category: data.category,
-        tags: Array.isArray(data.tags) ? data.tags.join(', ') : data.tags || '',
-        price: data.isFree ? null : data.price,
-        originalPrice: data.originalPrice,
-        discountPercent: data.discountPercent,
-        isFree: data.isFree,
-        level: data.level,
-        language: data.language,
-        duration: data.duration,
-        status: data.status,
-        isFeatured: data.isFeatured,
-        slug: data.slug,
-        instructorId,
-        ...(data.skillIds && data.skillIds.length > 0 && {
-          courseSkills: {
-            create: data.skillIds.map(skillId => ({ skillId }))
-          }
-        })
-      },
+      data: courseData,
       include: {
+        category: true,
         courseSkills: {
           include: {
             skill: true
@@ -399,33 +376,62 @@ export async function updateCourse(id: string, data: Partial<CourseFormData>, in
       }
     }
 
+    // Подготовка данных для обновления
+    const updateData: any = {}
+
+    // Базовые поля
+    if (data.title !== undefined) updateData.title = data.title
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.excerpt !== undefined) updateData.excerpt = data.excerpt
+    if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl
+    if (data.tags !== undefined) updateData.tags = data.tags
+    if (data.level !== undefined) updateData.level = data.level
+    if (data.language !== undefined) updateData.language = data.language
+    if (data.duration !== undefined) updateData.duration = data.duration
+    if (data.status !== undefined) updateData.status = data.status
+    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured
+    if (data.slug !== undefined) updateData.slug = data.slug
+
+    // Цена
+    if (data.isFree !== undefined) {
+      updateData.isFree = data.isFree
+      if (data.isFree) {
+        updateData.price = null
+      } else if (data.price !== undefined) {
+        updateData.price = data.price
+      }
+    }
+
+    if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice
+    if (data.discountPercent !== undefined) updateData.discountPercent = data.discountPercent
+
+    // Категория
+    if (data.categoryId !== undefined) {
+      if (data.categoryId) {
+        updateData.category = {
+          connect: { id: data.categoryId }
+        }
+      } else {
+        // Удалить связь с категорией
+        updateData.category = {
+          disconnect: true
+        }
+      }
+    }
+
+    // Навыки
+    if (data.skillIds !== undefined) {
+      updateData.courseSkills = {
+        deleteMany: {},
+        create: data.skillIds.map(skillId => ({ skillId }))
+      }
+    }
+
     const updatedCourse = await prisma.course.update({
       where: { id },
-      data: {
-        title: data.title,
-        description: data.description,
-        excerpt: data.excerpt,
-        thumbnailUrl: data.thumbnailUrl,
-        category: data.category,
-        tags: data.tags,
-        price: data.isFree !== undefined ? (data.isFree ? null : data.price) : undefined,
-        originalPrice: data.originalPrice,
-        discountPercent: data.discountPercent,
-        isFree: data.isFree,
-        level: data.level,
-        language: data.language,
-        duration: data.duration,
-        status: data.status,
-        isFeatured: data.isFeatured,
-        slug: data.slug,
-        ...(data.skillIds !== undefined && {
-          courseSkills: {
-            deleteMany: {},
-            create: data.skillIds.map(skillId => ({ skillId }))
-          }
-        })
-      },
+      data: updateData,
       include: {
+        category: true,
         courseSkills: {
           include: {
             skill: true
@@ -478,21 +484,20 @@ export async function deleteCourse(id: string, instructorId: string) {
   }
 }
 
-// Получить категории курсов
+// Получить категории курсов (старая версия для обратной совместимости)
+
 export async function getCourseCategories() {
   try {
-    const courses = await prisma.course.findMany({
-      where: { status: 'PUBLISHED' },
-      select: { category: true }
-    })
-
-    const categories = [...new Set(courses.map(c => c.category).filter(Boolean))].sort()
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { name: true, id: true },
+      orderBy: { order: 'asc' }
+    });
     
-    return categories
-
+    return categories.map(cat => cat.name);
   } catch (error) {
-    console.error('Error fetching categories:', error)
-    return []
+    console.error('Ошибка получения категорий курсов:', error);
+    return [];
   }
 }
 
@@ -504,6 +509,7 @@ export async function getPopularCourses(limit = 6) {
         status: 'PUBLISHED'
       },
       include: {
+        category: true,
         instructor: {
           select: {
             id: true,
@@ -512,159 +518,25 @@ export async function getPopularCourses(limit = 6) {
             lastName: true,
             avatar: true
           }
-        },
-        _count: {
-          select: {
-            reviews: true,
-            enrollments: true
-          }
         }
       },
       orderBy: [
-        { enrollments: { _count: 'desc' } },
+        { totalStudents: 'desc' },
         { averageRating: 'desc' }
       ],
       take: limit
     })
 
-    // Получить рейтинги отдельно
-    const courseIds = courses.map(c => c.id)
-    const reviews = await prisma.courseReview.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        rating: true
-      }
-    })
-
-    const courseRatings = reviews.reduce((acc, review) => {
-      if (!acc[review.courseId]) {
-        acc[review.courseId] = { sum: 0, count: 0 }
-      }
-      acc[review.courseId].sum += review.rating
-      acc[review.courseId].count += 1
-      return acc
-    }, {} as Record<string, { sum: number; count: number }>)
-
-    return courses.map(course => {
-      const ratings = courseRatings[course.id]
-      const averageRating = ratings 
-        ? parseFloat((ratings.sum / ratings.count).toFixed(1))
-        : 0
-
-      return {
-        ...course,
-        averageRating,
-        totalReviews: course._count.reviews,
-        totalStudents: course._count.enrollments
-      }
-    })
+    return courses.map(course => ({
+      ...course,
+      averageRating: course.averageRating || 0,
+      totalReviews: course.totalReviews || 0,
+      totalStudents: course.totalStudents || 0,
+      categoryName: course.category?.name || ''
+    }))
 
   } catch (error) {
     console.error('Error fetching popular courses:', error)
-    return []
-  }
-}
-
-// Получить рекомендуемые курсы для пользователя
-export async function getRecommendedCourses(userId: string, limit = 6) {
-  try {
-    // Получить курсы пользователя
-    const userEnrollments = await prisma.courseEnrollment.findMany({
-      where: { userId },
-      include: {
-        course: {
-          include: {
-            courseSkills: {
-              include: {
-                skill: true
-              }
-            }
-          }
-        }
-      }
-    })
-
-    // Получить навыки из пройденных курсов
-    const userSkillIds = new Set<string>()
-    userEnrollments.forEach(enrollment => {
-      enrollment.course.courseSkills.forEach(cs => {
-        userSkillIds.add(cs.skillId)
-      })
-    })
-
-    // Рекомендовать курсы с похожими навыками
-    const recommendedCourses = await prisma.course.findMany({
-      where: {
-        status: 'PUBLISHED',
-        id: { notIn: userEnrollments.map(e => e.courseId) },
-        ...(userSkillIds.size > 0 && {
-          courseSkills: {
-            some: {
-              skillId: { in: Array.from(userSkillIds) }
-            }
-          }
-        })
-      },
-      include: {
-        instructor: {
-          select: {
-            id: true,
-            username: true,
-            firstName: true,
-            lastName: true,
-            avatar: true
-          }
-        },
-        _count: {
-          select: {
-            reviews: true,
-            enrollments: true
-          }
-        }
-      },
-      orderBy: [
-        { isFeatured: 'desc' },
-        { enrollments: { _count: 'desc' } }
-      ],
-      take: limit
-    })
-
-    // Получить рейтинги
-    const courseIds = recommendedCourses.map(c => c.id)
-    const reviews = await prisma.courseReview.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        rating: true
-      }
-    })
-
-    const courseRatings = reviews.reduce((acc, review) => {
-      if (!acc[review.courseId]) {
-        acc[review.courseId] = { sum: 0, count: 0 }
-      }
-      acc[review.courseId].sum += review.rating
-      acc[review.courseId].count += 1
-      return acc
-    }, {} as Record<string, { sum: number; count: number }>)
-
-    return recommendedCourses.map(course => {
-      const ratings = courseRatings[course.id]
-      const averageRating = ratings 
-        ? parseFloat((ratings.sum / ratings.count).toFixed(1))
-        : 0
-
-      return {
-        ...course,
-        averageRating,
-        totalReviews: course._count.reviews,
-        totalStudents: course._count.enrollments
-      }
-    })
-
-  } catch (error) {
-    console.error('Error fetching recommended courses:', error)
     return []
   }
 }
@@ -679,11 +551,11 @@ export async function searchCourses(query: string, limit = 10) {
           { title: { contains: query } },
           { description: { contains: query } },
           { excerpt: { contains: query } },
-          { tags: { contains: query } },
-          { category: { contains: query } }
+          { tags: { contains: query } }
         ]
       },
       include: {
+        category: true,
         instructor: {
           select: {
             id: true,
@@ -692,50 +564,19 @@ export async function searchCourses(query: string, limit = 10) {
             lastName: true,
             avatar: true
           }
-        },
-        _count: {
-          select: {
-            reviews: true,
-            enrollments: true
-          }
         }
       },
-      orderBy: { enrollments: { _count: 'desc' } },
+      orderBy: { totalStudents: 'desc' },
       take: limit
     })
 
-    // Получить рейтинги
-    const courseIds = courses.map(c => c.id)
-    const reviews = await prisma.courseReview.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        rating: true
-      }
-    })
-
-    const courseRatings = reviews.reduce((acc, review) => {
-      if (!acc[review.courseId]) {
-        acc[review.courseId] = { sum: 0, count: 0 }
-      }
-      acc[review.courseId].sum += review.rating
-      acc[review.courseId].count += 1
-      return acc
-    }, {} as Record<string, { sum: number; count: number }>)
-
-    return courses.map(course => {
-      const ratings = courseRatings[course.id]
-      const averageRating = ratings 
-        ? parseFloat((ratings.sum / ratings.count).toFixed(1))
-        : 0
-
-      return {
-        ...course,
-        averageRating,
-        totalReviews: course._count.reviews,
-        totalStudents: course._count.enrollments
-      }
-    })
+    return courses.map(course => ({
+      ...course,
+      averageRating: course.averageRating || 0,
+      totalReviews: course.totalReviews || 0,
+      totalStudents: course.totalStudents || 0,
+      categoryName: course.category?.name || ''
+    }))
 
   } catch (error) {
     console.error('Error searching courses:', error)
@@ -749,6 +590,7 @@ export async function getInstructorCourses(instructorId: string) {
     const courses = await prisma.course.findMany({
       where: { instructorId },
       include: {
+        category: true,
         _count: {
           select: {
             reviews: true,
@@ -775,42 +617,15 @@ export async function getInstructorCourses(instructorId: string) {
       orderBy: { createdAt: 'desc' }
     })
 
-    // Получить рейтинги и рассчитать статистику
-    const courseIds = courses.map(c => c.id)
-    const reviews = await prisma.courseReview.findMany({
-      where: { courseId: { in: courseIds } },
-      select: {
-        courseId: true,
-        rating: true
-      }
-    })
-
-    const courseRatings = reviews.reduce((acc, review) => {
-      if (!acc[review.courseId]) {
-        acc[review.courseId] = { sum: 0, count: 0 }
-      }
-      acc[review.courseId].sum += review.rating
-      acc[review.courseId].count += 1
-      return acc
-    }, {} as Record<string, { sum: number; count: number }>)
-
-    return courses.map(course => {
-      const ratings = courseRatings[course.id]
-      const averageRating = ratings 
-        ? parseFloat((ratings.sum / ratings.count).toFixed(1))
-        : 0
-
-      const totalLessons = course.chapters.reduce((sum, chapter) => sum + chapter._count.lessons, 0)
-
-      return {
-        ...course,
-        averageRating,
-        totalReviews: course._count.reviews,
-        totalStudents: course._count.enrollments,
-        totalLessons,
-        totalChapters: course._count.chapters
-      }
-    })
+    return courses.map(course => ({
+      ...course,
+      averageRating: course.averageRating || 0,
+      totalReviews: course.totalReviews || 0,
+      totalStudents: course.totalStudents || 0,
+      totalLessons: course.chapters?.reduce((sum, chapter) => sum + chapter._count.lessons, 0) || 0,
+      totalChapters: course._count.chapters || 0,
+      categoryName: course.category?.name || ''
+    }))
 
   } catch (error) {
     console.error('Error fetching instructor courses:', error)
@@ -818,64 +633,12 @@ export async function getInstructorCourses(instructorId: string) {
   }
 }
 
-// Обновить статистику курса
-export async function updateCourseStats(courseId: string) {
-  try {
-    const [reviews, enrollments, chapters] = await Promise.all([
-      prisma.courseReview.findMany({
-        where: { courseId },
-        select: { rating: true }
-      }),
-      prisma.courseEnrollment.findMany({
-        where: { courseId }
-      }),
-      prisma.courseChapter.findMany({
-        where: { courseId },
-        include: {
-          lessons: true
-        }
-      })
-    ])
-
-    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
-    const averageRating = reviews.length > 0 
-      ? parseFloat((totalRating / reviews.length).toFixed(1))
-      : 0
-
-    const totalLessons = chapters.reduce((sum, chapter) => sum + chapter.lessons.length, 0)
-
-    await prisma.course.update({
-      where: { id: courseId },
-      data: {
-        averageRating,
-        totalReviews: reviews.length,
-        totalStudents: enrollments.length,
-        totalLessons
-      }
-    })
-
-    return { success: true }
-
-  } catch (error) {
-    console.error('Error updating course stats:', error)
-    throw new Error('Не удалось обновить статистику курса')
-  }
-}
-
-// ПРОСТАЯ ВЕРСИЯ - ВСЕ курсы (без фильтра по статусу)
+// ПРОСТАЯ ВЕРСИЯ - ВСЕ курсы
 export async function getSimpleCourses() {
   try {
     const courses = await prisma.course.findMany({
-      where: {}, // ← ПУСТОЙ where, БЕЗ ФИЛЬТРА ПО СТАТУСУ!
-      select: {
-        id: true,
-        title: true,
-        description: true,
+      include: {
         category: true,
-        price: true,
-        isFree: true,
-        averageRating: true,
-        totalStudents: true,
         instructor: {
           select: {
             username: true,
@@ -884,7 +647,7 @@ export async function getSimpleCourses() {
           }
         }
       },
-      take: 10 // ограничиваем для теста
+      take: 10
     });
 
     return {
@@ -892,11 +655,12 @@ export async function getSimpleCourses() {
         id: c.id,
         title: c.title || 'Без названия',
         description: c.description || '',
-        category: c.category || 'Без категории',
+        category: c.category?.name || 'Без категории',
         price: c.price || 0,
         isFree: c.isFree || false,
         averageRating: c.averageRating || 0,
         totalStudents: c.totalStudents || 0,
+        totalReviews: c.totalReviews || 0,
         instructor: c.instructor ? {
           username: c.instructor.username || 'Не указан',
           firstName: c.instructor.firstName || '',
@@ -908,5 +672,35 @@ export async function getSimpleCourses() {
   } catch (error) {
     console.error('Simple courses error:', error);
     return { courses: [], total: 0 };
+  }
+}
+
+// Получить полный список категорий с информацией
+export async function getFullCategories() {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        _count: {
+          select: { courses: true }
+        }
+      },
+      orderBy: [
+        { order: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+    
+    return {
+      success: true,
+      categories
+    }
+
+  } catch (error) {
+    console.error('Error fetching full categories:', error)
+    return { 
+      success: false, 
+      error: 'Не удалось загрузить категории' 
+    }
   }
 }
