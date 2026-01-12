@@ -109,37 +109,6 @@ export default function Hero() {
                                 Смотреть курсы
                             </Link>
                         </div>
-
-                        {/* Мини-статистика в ряд */}
-                        <div className="flex flex-wrap gap-6 pt-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-light-blue-100 rounded-xl flex items-center justify-center">
-                                    <Users className="w-6 h-6 text-light-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-2xl text-light-text-primary">1200+</p>
-                                    <p className="text-sm text-light-text-muted">Активных студентов</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-light-green-100 rounded-xl flex items-center justify-center">
-                                    <CheckCircle className="w-6 h-6 text-light-green-600" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-2xl text-light-text-primary">87.6%</p>
-                                    <p className="text-sm text-light-text-muted">Завершение курсов</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 bg-light-amber-100 rounded-xl flex items-center justify-center">
-                                    <Trophy className="w-6 h-6 text-light-amber-600" />
-                                </div>
-                                <div>
-                                    <p className="font-bold text-2xl text-light-text-primary">100K+</p>
-                                    <p className="text-sm text-light-text-muted">Проданных курсов</p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Правая часть - Изображение с плавающими карточками */}
