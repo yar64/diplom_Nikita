@@ -511,65 +511,30 @@ export async function updateCourse(id: string, data: CourseFormData, instructorI
   }
 }
 
+
 export async function deleteCourse(id: string, userId: string) {
-  try {
-    console.log(`🚀 Попытка удаления курса ${id}`);
-    console.log(`👤 ID пользователя: ${userId}`);
+  return await prisma.$transaction(async (tx) => {
+    // 1. Проверки прав...
     
-    // 1. Проверяем существование курса
-    const course = await prisma.course.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        title: true,
-        instructorId: true
-      }
+    // 2. Удаление в транзакции
+    const deletedCourse = await tx.course.delete({
+      where: { id }
     });
 
-    if (!course) {
-      throw new Error('Курс не найден');
+    // 3. Обновление статистики категории если нужно
+    if (deletedCourse.categoryId) {
+      await tx.category.update({
+        where: { id: deletedCourse.categoryId },
+        data: {
+          coursesCount: { decrement: 1 },
+          studentsCount: { decrement: deletedCourse.totalStudents },
+          revenue: { decrement: (deletedCourse.price || 0) * deletedCourse.totalStudents }
+        }
+      });
     }
 
-    console.log(`📚 Курс для удаления: "${course.title}"`);
-
-    // 2. ПРОВЕРКА ПРАВ АДМИНИСТРАТОРА
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { 
-        id: true, 
-        role: true, 
-        email: true,
-        username: true 
-      }
-    });
-
-    if (!user) {
-      throw new Error('Пользователь не найден');
-    }
-
-    console.log(`🔐 Проверка прав: ${user.email}, роль: ${user.role}`);
-
-    // Проверяем, является ли пользователь администратором
-    if (user.role !== 'ADMIN') {
-      throw new Error(`❌ Отказано в доступе. Требуется роль ADMIN, ваша роль: ${user.role}`);
-    }
-
-    console.log('✅ Проверка прав пройдена. Начинаем удаление...');
-
-    // 3. Удаляем связанные записи (ваш существующий код)
-    // ... остальной код удаления ...
-
-    console.log('✅ Курс успешно удален');
-
-    return { 
-      success: true,
-      message: `Курс "${course.title}" успешно удален`
-    };
-
-  } catch (error: any) {
-    console.error('❌ Ошибка удаления курса:', error);
-    throw new Error(error.message || 'Не удалось удалить курс');
-  }
+    return deletedCourse;
+  });
 }
 // Получить категории курсов (старая версия для обратной совместимости)
 export async function getCourseCategories() {

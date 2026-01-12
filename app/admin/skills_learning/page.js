@@ -13,8 +13,6 @@ import {
   BarChart3,
   X,
   RefreshCw,
-  Shield,
-  LogOut,
 } from "lucide-react";
 import { Table } from "../../../components/admin/share/Table";
 import { StatCard } from "../../../components/admin/ui/data-display/StatCard";
@@ -36,8 +34,7 @@ import {
   deleteCategory,
   updateAllCategoriesStats,
 } from "../../../server/category.actions";
-import { useAuth } from "../../../contexts/AuthContext"; // ИМПОРТ КОНТЕКСТА
-import { logoutUser } from "../../../server/auth.actions"; // ИМПОРТ ВЫХОДА
+import { useAuth } from "../../../contexts/AuthContext";
 
 const tabs = [
   { id: "courses", label: "Курсы", icon: <BookOpen className="w-4 h-4" /> },
@@ -65,7 +62,7 @@ const statusOptions = [
 
 export default function CoursesPage() {
   const router = useRouter();
-  const { user, isLoading: authLoading, logout } = useAuth(); // ИСПОЛЬЗУЕМ КОНТЕКСТ
+  const { user, isLoading: authLoading } = useAuth();
   
   const [activeTab, setActiveTab] = useState("courses");
   const [search, setSearch] = useState("");
@@ -99,10 +96,8 @@ export default function CoursesPage() {
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
-        // Пользователь не авторизован
         router.push('/login');
       } else if (user.role !== 'ADMIN') {
-        // Пользователь не администратор
         alert("Требуются права администратора");
         router.push('/profile');
       }
@@ -122,17 +117,6 @@ export default function CoursesPage() {
       loadData();
     }
   }, [activeTab, category, level, status, search, user]);
-
-  // Функция выхода
-  const handleLogout = async () => {
-    try {
-      await logoutUser(); // Очищаем сессию на сервере
-      logout(); // Очищаем контекст
-      router.push('/login');
-    } catch (error) {
-      console.error("Ошибка выхода:", error);
-    }
-  };
 
   // Загрузка категорий
   const loadCategories = async () => {
@@ -311,14 +295,12 @@ export default function CoursesPage() {
 
   // Удаление
   const handleDeleteClick = (course) => {
-    console.log("Курс для удаления:", course);
     setDeletingCourse(course);
     setDeletingCategory(null);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteCategoryClick = (cat) => {
-    console.log("Категория для удаления:", cat);
     setDeletingCategory(cat);
     setDeletingCourse(null);
     setIsDeleteModalOpen(true);
@@ -340,22 +322,13 @@ export default function CoursesPage() {
     
     try {
       if (deletingCourse) {
-        console.log("Удаление курса:", deletingCourse.id);
-        console.log("Администратор:", user.email);
-        
-        // Используем ID текущего пользователя
         await deleteCourse(deletingCourse.id, user.id);
         
-        // Обновляем список курсов
         setCourses(prev => prev.filter(course => course.id !== deletingCourse.id));
         
-        // Обновляем статистику
         await loadStats();
         
-        alert("Курс успешно удален");
-        
       } else if (deletingCategory) {
-        console.log("Удаление категории:", deletingCategory.id);
         const result = await deleteCategory(deletingCategory.id);
         
         if (result.success) {
@@ -536,7 +509,7 @@ export default function CoursesPage() {
                 type: "delete",
                 onClick: () => handleDeleteClick(course),
                 label: "Удалить",
-                disabled: user?.role !== 'ADMIN', // Отключаем если не админ
+                disabled: user?.role !== 'ADMIN',
               },
             ]}
             variant="minimal"
@@ -626,7 +599,7 @@ export default function CoursesPage() {
                   handleDeleteCategoryClick(cat);
                 },
                 label: "Удалить",
-                disabled: user?.role !== 'ADMIN', // Отключаем если не админ
+                disabled: user?.role !== 'ADMIN',
               },
             ]}
             variant="minimal"
@@ -653,8 +626,6 @@ export default function CoursesPage() {
 
     return (
       <div className="space-y-6">
-        {/* ... существующий код для популярных курсов ... */}
-        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="text-sm text-gray-600">
             Показано {courses.length} курсов из {stats.totalCourses}
@@ -905,51 +876,12 @@ export default function CoursesPage() {
 
   // Если нет пользователя или не админ
   if (!user || user.role !== 'ADMIN') {
-    return null; // useEffect уже перенаправит на login или профиль
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Панель информации об администраторе */}
-      <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Shield className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Панель администратора
-              </h2>
-              <p className="text-sm text-gray-600 flex items-center gap-2">
-                <span>{user.firstName} {user.lastName}</span>
-                <span className="text-gray-400">•</span>
-                <span>{user.email}</span>
-                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                  {user.role}
-                </span>
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => router.push('/profile')}
-              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Мой профиль
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              Выйти
-            </button>
-          </div>
-        </div>
-      </div>
-
+      {/* Упрощенный заголовок - без панели администратора */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
