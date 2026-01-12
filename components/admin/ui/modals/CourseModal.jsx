@@ -262,67 +262,75 @@ export function CourseModal({
     return errorMessage || 'Произошла непредвиденная ошибка. Попробуйте еще раз.';
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('Отправка формы курса...');
+  // В функции handleSubmit в CourseModal.jsx
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log('Отправка формы курса...');
+  
+  // Валидация формы
+  if (!validateForm()) {
+    setError('Пожалуйста, исправьте ошибки в форме');
+    return;
+  }
+
+  setIsLoading(true);
+  setError('');
+  setValidationErrors({});
+
+  try {
+    // Преобразуем пустые строки в числа/undefined
+    const processedData = {
+      ...formData,
+      price: formData.price ? parseFloat(formData.price) : (formData.isFree ? 0 : undefined),
+      originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
+      discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : undefined,
+      duration: formData.duration ? parseInt(formData.duration) : undefined,
+      tags: formData.tags || '',
+      category: formData.category // Передаем категорию
+    };
+
+    console.log('Данные для отправки:', processedData);
+
+    let result;
     
-    // Валидация формы
-    if (!validateForm()) {
-      setError('Пожалуйста, исправьте ошибки в форме');
+    if (course) {
+      console.log('Обновление курса:', course.id);
+      result = await updateCourse(course.id, processedData, processedData.instructorId);
+    } else {
+      console.log('Создание нового курса');
+      result = await createCourse(processedData, processedData.instructorId);
+    }
+
+    console.log('Результат операции:', result);
+
+    if (result.id) {
+      console.log('Курс успешно создан/обновлен, закрытие модалки');
+      onSuccess?.();
+      onClose();
+      
+      // Показываем сообщение об успехе
+      const event = new CustomEvent('showNotification', {
+        detail: { 
+          message: result.message || (course ? 'Курс успешно обновлен' : 'Курс успешно создан'), 
+          type: 'success' 
+        }
+      });
+      window.dispatchEvent(event);
+      
       return;
+    } else {
+      setError(result.error || 'Операция не удалась. Попробуйте еще раз.');
     }
-
-    setIsLoading(true);
-    setError('');
-    setValidationErrors({});
-
-    try {
-      // Преобразуем пустые строки в числа/undefined
-      const processedData = {
-        ...formData,
-        price: formData.price ? parseFloat(formData.price) : (formData.isFree ? 0 : undefined),
-        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
-        discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : undefined,
-        duration: formData.duration ? parseInt(formData.duration) : undefined,
-        tags: formData.tags || '' // ← Исправление: строка вместо массива
-      };
-
-      console.log('Данные для отправки:', processedData);
-
-      let result;
-      
-      if (course) {
-        console.log('Обновление курса:', course.id);
-        result = await updateCourse(course.id, processedData, processedData.instructorId);
-      } else {
-        console.log('Создание нового курса');
-        result = await createCourse(processedData, processedData.instructorId);
-      }
-
-      console.log('Результат операции:', result);
-
-      if (result.id) {
-        console.log('Курс успешно создан/обновлен, закрытие модалки');
-        onSuccess?.();
-        onClose(); // ← Важно: закрываем модалку
-        return; // ← Прерываем выполнение
-      } else if (result.error) {
-        setError(parsePrismaError(result.error));
-      } else {
-        setError('Операция не удалась. Попробуйте еще раз.');
-      }
-    } catch (err) {
-      // Парсим и показываем понятную ошибку
-      const userFriendlyError = parsePrismaError(err.message);
-      setError(userFriendlyError);
-      
-      // Логируем для разработчика
-      console.error('Ошибка создания/обновления курса:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  } catch (err) {
+    // Парсим и показываем понятную ошибку
+    const userFriendlyError = parsePrismaError(err.message);
+    setError(userFriendlyError);
+    
+    console.error('Ошибка создания/обновления курса:', err);
+  } finally {
+    setIsLoading(false);
+  }
+};
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     

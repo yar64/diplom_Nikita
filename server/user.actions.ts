@@ -60,7 +60,11 @@ export async function registerUser(data: {
             goalReminders: true,
             weeklyReports: true,
             defaultDifficulty: 'BEGINNER',
-            preferredResourceType: 'VIDEO'
+            mentorNotifications: true,          // добавьте это
+            communityUpdates: true,            // добавьте это
+            autoGenerateGoals: false,          // добавьте это
+            studyReminders: true,              // добавьте это
+            reminderTime: "20:00" 
           }
         },
         notificationSettings: {
@@ -329,16 +333,87 @@ export async function getCurrentUser(userId: string) {
   }
 }
 
-// Остальные функции оставляем без изменений
+// server/user.actions.ts
 export async function deleteUser(id: string) {
   try {
+    console.log('🔄 Удаление пользователя:', id);
+    
+    // 1. Сначала находим пользователя для информации
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { username: true, email: true }
+    });
+    
+    if (!user) {
+      return { 
+        success: false, 
+        error: 'Пользователь не найден' 
+      };
+    }
+    
+    console.log(`Удаляем пользователя: ${user.username}`);
+    
+    // 2. ОБРАБАТЫВАЕМ КУРСЫ, где пользователь инструктор
+    try {
+      // Способ 1: Передаем курсы другому пользователю
+      const adminUser = await prisma.user.findFirst({
+        where: { 
+          id: { not: id }, // Не текущий пользователь
+          role: { in: ['ADMIN', 'MENTOR'] } 
+        }
+      });
+      
+      if (adminUser) {
+        // Передаем курсы администратору
+        await prisma.course.updateMany({
+          where: { instructorId: id },
+          data: { instructorId: adminUser.id }
+        });
+        console.log(`✅ Курсы переданы ${adminUser.username}`);
+      } else {
+        // Способ 2: Обнуляем инструктора
+        await prisma.course.updateMany({
+          where: { instructorId: id },
+          data: { instructorId: null }
+        });
+        console.log(`✅ Инструктор обнулен для курсов`);
+      }
+    } catch (courseError) {
+      console.log('⚠️ Ошибка при обработке курсов:', courseError.message);
+      // Продолжаем удаление даже если не удалось обработать курсы
+    }
+    
+    // 3. Теперь удаляем пользователя
     await prisma.user.delete({
       where: { id },
-    })
-    revalidatePath('/admin/users')
-    return { success: true }
+    });
+    
+    console.log('✅ Пользователь успешно удален');
+    
+    revalidatePath('/admin/users');
+    return { 
+      success: true, 
+      message: `Пользователь ${user.username} удален` 
+    };
+    
   } catch (error) {
-    return { success: false, error: 'Не удалось удалить пользователя' }
+    console.error('❌ Ошибка при удалении:', error);
+    
+    // Более детальный анализ ошибки
+    let errorMessage = 'Не удалось удалить пользователя';
+    
+    if (error.code === 'P2003') {
+      errorMessage = 'Пользователь связан с другими данными. Нужно обновить схему Prisma.';
+    } else if (error.message.includes('foreign key constraint')) {
+      errorMessage = 'Ошибка внешнего ключа. Пользователь является инструктором курсов.';
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: error.code,
+      details: error.message 
+    };
   }
 }
 
@@ -463,5 +538,84 @@ export async function getUserProfile(id: string) {
   } catch (error) {
     console.error('Error fetching user profile:', error)
     return { success: false, error: 'Не удалось получить профиль пользователя: ' + error.message }
+  }
+}
+
+export async function isUserAdmin(userId: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        id: true,
+        role: true,
+        email: true,
+        username: true 
+      }
+    });
+    
+    if (!user) {
+      throw new Error('Пользователь не найден');
+    }
+    
+    const isAdmin = user.role === 'ADMIN';
+    console.log(`Проверка администратора: ${user.email}, роль: ${user.role}, isAdmin: ${isAdmin}`);
+    
+    return {
+      success: true,
+      isAdmin,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role
+      }
+    };
+    
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return {
+      success: false,
+      isAdmin: false,
+      error: 'Ошибка проверки прав администратора'
+    };
+  }
+}
+
+/**
+ * Получает первого администратора из системы
+ */
+export async function getFirstAdminUser() {
+  try {
+    const admin = await prisma.user.findFirst({
+      where: {
+        role: 'ADMIN'
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        role: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+    
+    if (!admin) {
+      throw new Error('В системе нет администраторов');
+    }
+    
+    return {
+      success: true,
+      user: admin
+    };
+  } catch (error) {
+    console.error('Error getting admin user:', error);
+    return {
+      success: false,
+      error: 'Не удалось найти администратора'
+    };
   }
 }

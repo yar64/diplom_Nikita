@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   BookOpen,
   Users,
   DollarSign,
   Search,
-  Plus,
   Star,
   Folder,
   Tag,
   BarChart3,
-  Download,
+  X,
   RefreshCw,
+  Shield,
+  LogOut,
 } from "lucide-react";
 import { Table } from "../../../components/admin/share/Table";
 import { StatCard } from "../../../components/admin/ui/data-display/StatCard";
@@ -34,7 +36,8 @@ import {
   deleteCategory,
   updateAllCategoriesStats,
 } from "../../../server/category.actions";
-import { enrollInCourse } from "../../../server/course-progress.actions";
+import { useAuth } from "../../../contexts/AuthContext"; // ИМПОРТ КОНТЕКСТА
+import { logoutUser } from "../../../server/auth.actions"; // ИМПОРТ ВЫХОДА
 
 const tabs = [
   { id: "courses", label: "Курсы", icon: <BookOpen className="w-4 h-4" /> },
@@ -61,6 +64,9 @@ const statusOptions = [
 ];
 
 export default function CoursesPage() {
+  const router = useRouter();
+  const { user, isLoading: authLoading, logout } = useAuth(); // ИСПОЛЬЗУЕМ КОНТЕКСТ
+  
   const [activeTab, setActiveTab] = useState("courses");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -79,9 +85,6 @@ export default function CoursesPage() {
     avgRating: 0,
   });
 
-  const [exporting, setExporting] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -90,17 +93,48 @@ export default function CoursesPage() {
   const [deletingCourse, setDeletingCourse] = useState(null);
   const [deletingCategory, setDeletingCategory] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const userId = "mock-user-id";
-
+  // Проверка авторизации и прав при загрузке
   useEffect(() => {
-    loadData();
-  }, [activeTab, category, level, status]);
+    if (!authLoading) {
+      if (!user) {
+        // Пользователь не авторизован
+        router.push('/login');
+      } else if (user.role !== 'ADMIN') {
+        // Пользователь не администратор
+        alert("Требуются права администратора");
+        router.push('/profile');
+      }
+    }
+  }, [authLoading, user, router]);
 
+  // Загрузка категорий при монтировании
   useEffect(() => {
-    loadCategories();
-  }, []);
+    if (user?.role === 'ADMIN') {
+      loadCategories();
+    }
+  }, [user]);
 
+  // Загрузка данных при изменении фильтров
+  useEffect(() => {
+    if (activeTab === "courses" && user?.role === 'ADMIN') {
+      loadData();
+    }
+  }, [activeTab, category, level, status, search, user]);
+
+  // Функция выхода
+  const handleLogout = async () => {
+    try {
+      await logoutUser(); // Очищаем сессию на сервере
+      logout(); // Очищаем контекст
+      router.push('/login');
+    } catch (error) {
+      console.error("Ошибка выхода:", error);
+    }
+  };
+
+  // Загрузка категорий
   const loadCategories = async () => {
     try {
       const cats = await getCourseCategories();
@@ -117,35 +151,34 @@ export default function CoursesPage() {
     }
   };
 
+  // Загрузка данных
   const loadData = async () => {
     setLoading(true);
 
     try {
-      if (activeTab === "courses") {
-        const filters = {
-          status: status || undefined,
-          category: category || undefined,
-          level: level || undefined,
-          search: search || undefined,
-          page: 1,
-          limit: 50,
-        };
+      const filters = {
+        status: status || undefined,
+        category: category || undefined,
+        level: level || undefined,
+        search: search || undefined,
+        page: 1,
+        limit: 100,
+      };
 
-        const result = await getCourses(filters);
+      const result = await getCourses(filters);
 
-        if (result && result.courses) {
-          setCourses(result.courses);
-        } else {
-          setCourses([]);
-        }
+      if (result && result.courses) {
+        setCourses(result.courses);
+      } else {
+        setCourses([]);
+      }
 
-        try {
-          const popularResult = await getPopularCourses(10);
-          setPopularCourses(popularResult || []);
-        } catch (popularError) {
-          console.error("Ошибка загрузки популярных курсов:", popularError);
-          setPopularCourses([]);
-        }
+      try {
+        const popularResult = await getPopularCourses(10);
+        setPopularCourses(popularResult || []);
+      } catch (popularError) {
+        console.error("Ошибка загрузки популярных курсов:", popularError);
+        setPopularCourses([]);
       }
 
       await loadStats();
@@ -158,6 +191,7 @@ export default function CoursesPage() {
     }
   };
 
+  // Загрузка статистики
   const loadStats = async () => {
     try {
       const result = await getSimpleCourses();
@@ -195,39 +229,18 @@ export default function CoursesPage() {
     }
   };
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const data = {
-        courses,
-        categories: fullCategories,
-        stats,
-        exportedAt: new Date().toISOString(),
-      };
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `courses-export-${new Date()
-        .toISOString()
-        .slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert("Данные успешно экспортированы");
-    } catch (error) {
-      console.error("Ошибка экспорта:", error);
-      alert("Ошибка при экспорте данных");
-    } finally {
-      setExporting(false);
-    }
+  // Сброс фильтров
+  const handleResetFilters = () => {
+    setSearch("");
+    setCategory("");
+    setLevel("");
+    setStatus("");
   };
 
+  // Проверка активных фильтров
+  const hasActiveFilters = search || category || level || status;
+
+  // Обновление статистики
   const handleRefreshStats = async () => {
     setRefreshing(true);
     try {
@@ -246,6 +259,7 @@ export default function CoursesPage() {
     }
   };
 
+  // Работа с курсами
   const handleAddCourse = () => {
     setEditingCourse(null);
     setIsCourseModalOpen(true);
@@ -262,10 +276,15 @@ export default function CoursesPage() {
   };
 
   const handleCourseSuccess = () => {
-    console.log("Курс успешно создан/обновлен, обновляю данные...");
-    loadData();
+    handleCloseCourseModal();
+    setTimeout(() => {
+      loadData().catch(err => {
+        console.error("Ошибка загрузки данных:", err);
+      });
+    }, 100);
   };
 
+  // Работа с категориями
   const handleAddCategory = () => {
     setEditingCategory(null);
     setIsCategoryModalOpen(true);
@@ -277,53 +296,68 @@ export default function CoursesPage() {
   };
 
   const handleCloseCategoryModal = () => {
-    console.log('Закрытие модалки категории'); // Отладка
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
   };
 
-  // Упрощенная версия - просто загружает данные
   const handleCategorySuccess = () => {
-    console.log("Категория успешно создана/обновлена, обновляю данные...");
-    loadCategories();
+    handleCloseCategoryModal();
+    setTimeout(() => {
+      loadCategories().catch(err => {
+        console.error("Ошибка загрузки категорий:", err);
+      });
+    }, 100);
   };
 
+  // Удаление
   const handleDeleteClick = (course) => {
+    console.log("Курс для удаления:", course);
     setDeletingCourse(course);
+    setDeletingCategory(null);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteCategoryClick = (cat) => {
+    console.log("Категория для удаления:", cat);
     setDeletingCategory(cat);
+    setDeletingCourse(null);
     setIsDeleteModalOpen(true);
   };
 
   const handleCloseDeleteModal = () => {
     setIsDeleteModalOpen(false);
-    setDeletingCourse(null);
-    setDeletingCategory(null);
-    setIsDeleting(false);
+    setTimeout(() => {
+      setDeletingCourse(null);
+      setDeletingCategory(null);
+      setIsDeleting(false);
+    }, 100);
   };
 
   const handleConfirmDelete = async () => {
+    if (isDeleting || !user) return;
+    
     setIsDeleting(true);
-
+    
     try {
       if (deletingCourse) {
-        const instructorId = "mock-instructor-id";
-        await deleteCourse(deletingCourse.id, instructorId);
-        setCourses(courses.filter((course) => course.id !== deletingCourse.id));
-
-        // Показываем уведомление об успешном удалении
-        const event = new CustomEvent("showNotification", {
-          detail: {
-            message: "Курс успешно удален",
-            type: "success",
-          },
-        });
-        window.dispatchEvent(event);
+        console.log("Удаление курса:", deletingCourse.id);
+        console.log("Администратор:", user.email);
+        
+        // Используем ID текущего пользователя
+        await deleteCourse(deletingCourse.id, user.id);
+        
+        // Обновляем список курсов
+        setCourses(prev => prev.filter(course => course.id !== deletingCourse.id));
+        
+        // Обновляем статистику
+        await loadStats();
+        
+        alert("Курс успешно удален");
+        
       } else if (deletingCategory) {
+        console.log("Удаление категории:", deletingCategory.id);
         const result = await deleteCategory(deletingCategory.id);
+        
         if (result.success) {
           setFullCategories(
             fullCategories.filter((cat) => cat.id !== deletingCategory.id)
@@ -331,39 +365,21 @@ export default function CoursesPage() {
           setCategories(
             categories.filter((cat) => cat !== deletingCategory.name)
           );
-
-          // Показываем уведомление об успешном удалении
-          const event = new CustomEvent("showNotification", {
-            detail: {
-              message: "Категория успешно удалена",
-              type: "success",
-            },
-          });
-          window.dispatchEvent(event);
+          
+          alert("Категория успешно удалена");
         } else {
-          alert(result.error);
+          alert(result.error || "Ошибка при удалении категории");
         }
       }
-
-      handleCloseDeleteModal();
     } catch (error) {
+      console.error("Ошибка удаления:", error);
       alert(error.message || "Ошибка при удалении");
-      handleCloseDeleteModal();
     } finally {
-      setIsDeleting(false);
+      handleCloseDeleteModal();
     }
   };
 
-  const handleEnrollCourse = async (courseId) => {
-    try {
-      await enrollInCourse(courseId, userId);
-      alert("Вы успешно записались на курс!");
-      loadData();
-    } catch (error) {
-      alert(error.message || "Ошибка при записи на курс");
-    }
-  };
-
+  // Вспомогательные функции отображения
   const renderRating = (rating, totalReviews) => {
     return (
       <div className="flex items-center space-x-2">
@@ -404,6 +420,7 @@ export default function CoursesPage() {
     );
   };
 
+  // Данные для таблицы курсов
   const getCoursesTableData = () => {
     const headers = [
       "Название курса",
@@ -411,10 +428,29 @@ export default function CoursesPage() {
       "Рейтинг",
       "Студенты",
       "Цена",
+      "Статус",
       "Действия",
     ];
 
     const data = courses.map((course) => {
+      let statusColor = "gray";
+      let statusText = "Неизвестно";
+      
+      switch (course.status) {
+        case 'PUBLISHED':
+          statusColor = "green";
+          statusText = "Опубликован";
+          break;
+        case 'DRAFT':
+          statusColor = "yellow";
+          statusText = "Черновик";
+          break;
+        case 'ARCHIVED':
+          statusColor = "red";
+          statusText = "В архиве";
+          break;
+      }
+
       return [
         <div key={course.id} className="flex items-center space-x-3">
           <div className="w-12 h-12 flex-shrink-0">
@@ -445,7 +481,7 @@ export default function CoursesPage() {
                 {course.categoryName || course.category || "Без категории"}
               </span>
               <span>•</span>
-              <span>{course.totalLessons || 0} уроков</span>
+              <span>{course.totalChapters || 0} уроков</span>
               <span>•</span>
               <span>@{course.instructor?.username || "неизвестно"}</span>
             </div>
@@ -459,7 +495,9 @@ export default function CoursesPage() {
                 ? "success"
                 : course.level === "INTERMEDIATE"
                 ? "warning"
-                : "error"
+                : course.level === "ADVANCED"
+                ? "error"
+                : "info"
             }
           />
         </div>,
@@ -472,51 +510,47 @@ export default function CoursesPage() {
           <span className="font-medium">{course.totalStudents || 0}</span>
         </div>,
         renderPrice(course),
-        <ActionButton
-          key={`${course.id}-actions`}
-          actions={[
-            {
-              type: "edit",
-              onClick: () => handleEditCourse(course),
-              label: "Редактировать",
-            },
-            {
-              type: "view",
-              onClick: () => window.open(`/course/${course.slug}`, "_blank"),
-              label: "Просмотреть",
-            },
-            {
-              type: "add",
-              onClick: () => handleEnrollCourse(course.id),
-              label: "Записаться",
-            },
-            {
-              type: "delete",
-              onClick: () => handleDeleteClick(course),
-              label: "Удалить",
-            },
-          ]}
-          variant="minimal"
-        />,
+        <div key={`${course.id}-status`}>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full 
+            ${statusColor === 'green' ? 'bg-green-100 text-green-800' : 
+              statusColor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+              statusColor === 'red' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'}`}>
+            {statusText}
+          </span>
+        </div>,
+        <div key={`${course.id}-actions`}>
+          <ActionButton
+            actions={[
+              {
+                type: "edit",
+                onClick: () => handleEditCourse(course),
+                label: "Редактировать",
+              },
+              {
+                type: "view",
+                onClick: () => window.open(`/course/${course.slug}`, "_blank"),
+                label: "Просмотреть",
+              },
+              {
+                type: "delete",
+                onClick: () => handleDeleteClick(course),
+                label: "Удалить",
+                disabled: user?.role !== 'ADMIN', // Отключаем если не админ
+              },
+            ]}
+            variant="minimal"
+          />
+        </div>,
       ];
     });
 
     return { headers, data };
   };
 
+  // Данные для таблицы категорий
   const getCategoriesTableData = () => {
-    const categoriesToDisplay =
-      fullCategories.length > 0
-        ? fullCategories
-        : categories.map((cat) => ({
-            name: cat,
-            id: cat,
-            color: "#6366f1",
-            isActive: true,
-            coursesCount: 0,
-            studentsCount: 0,
-            revenue: 0,
-          }));
+    const categoriesToDisplay = fullCategories;
 
     const headers = [
       "Название категории",
@@ -527,14 +561,8 @@ export default function CoursesPage() {
     ];
 
     const data = categoriesToDisplay.map((cat) => {
-      const stats = {
-        count: cat.coursesCount || 0,
-        students: cat.studentsCount || 0,
-        revenue: cat.revenue || 0,
-      };
-
       return [
-        <div key={cat.id || cat.name} className="flex items-center space-x-3">
+        <div key={cat.id} className="flex items-center space-x-3">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
             style={{ backgroundColor: cat.color || "#6366f1" }}
@@ -559,56 +587,64 @@ export default function CoursesPage() {
           </div>
         </div>,
         <div key={`${cat.id}-count`} className="text-center">
-          <div className="text-lg font-bold text-blue-600">{stats.count}</div>
+          <div className="text-lg font-bold text-blue-600">{cat.coursesCount || 0}</div>
           <div className="text-xs text-gray-500">курсов</div>
         </div>,
         <div key={`${cat.id}-students`} className="text-center">
           <div className="text-lg font-bold text-green-600">
-            {stats.students}
+            {cat.studentsCount || 0}
           </div>
           <div className="text-xs text-gray-500">студентов</div>
         </div>,
         <div key={`${cat.id}-revenue`} className="text-center">
           <div className="text-lg font-bold text-amber-600">
-            {stats.revenue.toLocaleString("ru-RU")} ₽
+            {cat.revenue?.toLocaleString("ru-RU") || 0} ₽
           </div>
           <div className="text-xs text-gray-500">доход</div>
         </div>,
-        <ActionButton
-          key={`${cat.id}-actions`}
-          actions={[
-            {
-              type: "edit",
-              onClick: () => handleEditCategory(cat),
-              label: "Редактировать",
-            },
-            {
-              type: "view",
-              onClick: () => {
-                setCategory(cat.id);
-                setActiveTab("courses");
+        <div key={`${cat.id}-actions`}>
+          <ActionButton
+            actions={[
+              {
+                type: "edit",
+                onClick: () => handleEditCategory(cat),
+                label: "Редактировать",
               },
-              label: "Показать курсы",
-            },
-            {
-              type: "delete",
-              onClick: () => handleDeleteCategoryClick(cat),
-              label: "Удалить",
-            },
-          ]}
-          variant="minimal"
-        />,
+              {
+                type: "view",
+                onClick: () => {
+                  setCategory(cat.id);
+                  setActiveTab("courses");
+                },
+                label: "Показать курсы",
+              },
+              {
+                type: "delete",
+                onClick: (e) => {
+                  e?.stopPropagation?.();
+                  e?.preventDefault?.();
+                  handleDeleteCategoryClick(cat);
+                },
+                label: "Удалить",
+                disabled: user?.role !== 'ADMIN', // Отключаем если не админ
+              },
+            ]}
+            variant="minimal"
+          />
+        </div>,
       ];
     });
 
     return { headers, data };
   };
 
+  // Рендер таба курсов
   const renderCoursesTab = () => {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Загрузка курсов...</span>
         </div>
       );
     }
@@ -617,75 +653,27 @@ export default function CoursesPage() {
 
     return (
       <div className="space-y-6">
-        {/* Блок популярных курсов */}
-        {popularCourses.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  Популярные курсы
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Топ курсов по популярности
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {popularCourses.slice(0, 3).map((course) => (
-                <div
-                  key={course.id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden">
-                      {course.thumbnailUrl ? (
-                        <img
-                          src={course.thumbnailUrl}
-                          alt={course.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                          <BookOpen className="w-5 h-5 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 truncate">
-                        {course.title}
-                      </h4>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Star className="w-3 h-3 mr-1" />
-                        <span>{course.averageRating?.toFixed(1) || "0.0"}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600">
-                      <Users className="w-3 h-3 inline mr-1" />
-                      {course.totalStudents || 0}
-                    </div>
-                    <button
-                      onClick={() => handleEnrollCourse(course.id)}
-                      className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg transition-colors"
-                    >
-                      Записаться
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Фильтры и поиск */}
+        {/* ... существующий код для популярных курсов ... */}
+        
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="text-sm text-gray-600">
-            Показано {courses.length} курсов
+            Показано {courses.length} курсов из {stats.totalCourses}
+            {hasActiveFilters && (
+              <span className="ml-2 text-blue-600">
+                (применены фильтры)
+              </span>
+            )}
           </div>
-          <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex flex-col md:flex-row items-center gap-3">
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm flex items-center"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Сбросить фильтры
+              </button>
+            )}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -733,22 +721,37 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {/* Таблица курсов */}
         {courses.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
             <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Курсы не найдены
+              {hasActiveFilters ? "Курсы не найдены" : "Нет созданных курсов"}
             </h3>
             <p className="text-gray-500 mb-6">
-              Попробуйте изменить параметры фильтрации
+              {hasActiveFilters 
+                ? "Попробуйте изменить параметры фильтрации" 
+                : "Создайте свой первый курс"}
             </p>
-            <button
-              onClick={handleAddCourse}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Создать первый курс
-            </button>
+            {hasActiveFilters ? (
+              <button
+                onClick={handleResetFilters}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Сбросить фильтры
+              </button>
+            ) : (
+              <button
+                onClick={handleAddCourse}
+                disabled={user?.role !== 'ADMIN'}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  user?.role !== 'ADMIN'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                Создать первый курс
+              </button>
+            )}
           </div>
         ) : (
           <Table
@@ -763,19 +766,9 @@ export default function CoursesPage() {
     );
   };
 
+  // Рендер таба категорий
   const renderCategoriesTab = () => {
-    const categoriesToDisplay =
-      fullCategories.length > 0
-        ? fullCategories
-        : categories.map((cat) => ({
-            name: cat,
-            id: cat,
-            color: "#6366f1",
-            isActive: true,
-            coursesCount: 0,
-            studentsCount: 0,
-            revenue: 0,
-          }));
+    const categoriesToDisplay = fullCategories;
 
     const { headers, data } = getCategoriesTableData();
 
@@ -786,26 +779,30 @@ export default function CoursesPage() {
             {categoriesToDisplay.length} категорий
           </div>
           <div className="flex gap-3">
-            <ActionButton
-              type="refresh"
+            <button
               onClick={handleRefreshStats}
-              disabled={refreshing}
-              variant="minimal"
-              size="sm"
-              showLabels={true}
-              className={refreshing ? "opacity-50 cursor-not-allowed" : ""}
+              disabled={refreshing || user?.role !== 'ADMIN'}
+              className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center ${
+                refreshing || user?.role !== 'ADMIN'
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                  : "bg-blue-100 text-blue-600 hover:bg-blue-200"
+              }`}
             >
+              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
               {refreshing ? "Обновление..." : "Обновить статистику"}
-            </ActionButton>
-            <ActionButton
-              type="add"
+            </button>
+            <button
               onClick={handleAddCategory}
-              variant="solid"
-              size="sm"
-              showLabels={true}
+              disabled={user?.role !== 'ADMIN'}
+              className={`px-3 py-2 text-sm rounded-lg transition-colors flex items-center ${
+                user?.role !== 'ADMIN'
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
+              <Folder className="w-4 h-4 mr-2" />
               Добавить категорию
-            </ActionButton>
+            </button>
           </div>
         </div>
 
@@ -818,15 +815,18 @@ export default function CoursesPage() {
             <p className="text-gray-500 mb-6">
               Создайте первую категорию для ваших курсов
             </p>
-            <ActionButton
-              type="add"
+            <button
               onClick={handleAddCategory}
-              variant="solid"
-              size="md"
-              showLabels={true}
+              disabled={user?.role !== 'ADMIN'}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center mx-auto ${
+                user?.role !== 'ADMIN'
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
+              <Folder className="w-4 h-4 mr-2" />
               Создать категорию
-            </ActionButton>
+            </button>
           </div>
         ) : (
           <>
@@ -838,7 +838,6 @@ export default function CoursesPage() {
               hover={true}
             />
 
-            {/* Статистика по категориям */}
             <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
               <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                 <BarChart3 className="w-4 h-4 mr-2" />
@@ -853,10 +852,7 @@ export default function CoursesPage() {
                 </div>
                 <div className="bg-white p-4 rounded-lg border border-gray-200">
                   <div className="text-2xl font-bold text-green-600">
-                    {
-                      courses.filter((c) => categories.includes(c.category))
-                        .length
-                    }
+                    {categoriesToDisplay.reduce((sum, cat) => sum + (cat.coursesCount || 0), 0)}
                   </div>
                   <div className="text-sm text-gray-600">
                     Курсов в категориях
@@ -866,8 +862,8 @@ export default function CoursesPage() {
                   <div className="text-2xl font-bold text-purple-600">
                     {categoriesToDisplay.length > 0
                       ? Math.round(
-                          courses.filter((c) => categories.includes(c.category))
-                            .length / categoriesToDisplay.length
+                          categoriesToDisplay.reduce((sum, cat) => sum + (cat.coursesCount || 0), 0) / 
+                          categoriesToDisplay.length
                         )
                       : 0}
                   </div>
@@ -883,6 +879,7 @@ export default function CoursesPage() {
     );
   };
 
+  // Рендер контента таба
   const renderTabContent = () => {
     switch (activeTab) {
       case "courses":
@@ -894,9 +891,65 @@ export default function CoursesPage() {
     }
   };
 
+  // Показываем загрузку при проверке авторизации
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Проверка авторизации...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Если нет пользователя или не админ
+  if (!user || user.role !== 'ADMIN') {
+    return null; // useEffect уже перенаправит на login или профиль
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Заголовок страницы с кнопками */}
+      {/* Панель информации об администраторе */}
+      <div className="mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                Панель администратора
+              </h2>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                <span>{user.firstName} {user.lastName}</span>
+                <span className="text-gray-400">•</span>
+                <span>{user.email}</span>
+                <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  {user.role}
+                </span>
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.push('/profile')}
+              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Мой профиль
+            </button>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Выйти
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
@@ -908,28 +961,33 @@ export default function CoursesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <ActionButton
-            type="add"
+          <button
             onClick={handleAddCategory}
-            variant="minimal"
-            size="sm"
-            showLabels={true}
+            disabled={user?.role !== 'ADMIN'}
+            className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center ${
+              user?.role !== 'ADMIN'
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
           >
+            <Folder className="w-4 h-4 mr-2" />
             Добавить категорию
-          </ActionButton>
-          <ActionButton
-            type="add"
+          </button>
+          <button
             onClick={handleAddCourse}
-            variant="solid"
-            size="sm"
-            showLabels={true}
+            disabled={user?.role !== 'ADMIN'}
+            className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center ${
+              user?.role !== 'ADMIN'
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
           >
+            <BookOpen className="w-4 h-4 mr-2" />
             Создать курс
-          </ActionButton>
+          </button>
         </div>
       </div>
 
-      {/* Статистические карточки */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Всего курсов"
@@ -965,16 +1023,11 @@ export default function CoursesPage() {
         />
       </div>
 
-      {/* Основной контент с табами */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
-        {/* Навигация табами */}
         <Tabs tabs={tabs} defaultTab="courses" onTabChange={setActiveTab} />
-
-        {/* Контент табов */}
         <div className="mt-6">{renderTabContent()}</div>
       </div>
 
-      {/* Модальные окна */}
       <CourseModal
         isOpen={isCourseModalOpen}
         onClose={handleCloseCourseModal}
@@ -982,7 +1035,6 @@ export default function CoursesPage() {
         onSuccess={handleCourseSuccess}
       />
 
-      {/* CategoryModal - передаем handleCategorySuccess который только обновляет данные */}
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={handleCloseCategoryModal}
@@ -991,16 +1043,17 @@ export default function CoursesPage() {
       />
 
       <ConfirmModal
+        key={`delete-modal-${deletingCourse?.id || deletingCategory?.id || 'empty'}`}
         isOpen={isDeleteModalOpen}
         onClose={handleCloseDeleteModal}
         onConfirm={handleConfirmDelete}
         title={deletingCourse ? "Удаление курса" : "Удаление категории"}
         message={
           deletingCourse
-            ? `Вы уверены, что хотите удалить курс "${deletingCourse?.title}"? Это действие нельзя отменить.`
-            : `Вы уверены, что хотите удалить категорию "${deletingCategory?.name}"? Все курсы этой категории останутся без категории.`
+            ? `Вы уверены, что хотите удалить курс "${deletingCourse?.title || 'этот курс'}"? Это действие нельзя отменить.`
+            : `Вы уверены, что хотите удалить категорию "${deletingCategory?.name || 'эту категорию'}"? Все курсы этой категории останутся без категории.`
         }
-        confirmLabel="Удалить"
+        confirmLabel={isDeleting ? "Удаление..." : "Удалить"}
         cancelLabel="Отмена"
         variant="delete"
         isConfirming={isDeleting}

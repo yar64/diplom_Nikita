@@ -55,9 +55,6 @@ export function ConfirmModal({
     >
       <div className="p-6">
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            {config.icon}
-          </div>
           <div className="text-gray-600 mb-6 transition-all duration-300">{message}</div>
           
           <div className="flex justify-center space-x-3">

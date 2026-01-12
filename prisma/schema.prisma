@@ -38,7 +38,7 @@ model User {
   courseReviews        CourseReview[]
   courseProgress       CourseProgress[]   // Добавлено
 
-  // Настройки
+  // Настройки - ИСПРАВЛЕНО: убраны @relation аргументы на этой стороне
   settings             UserSettings?
   notificationSettings UserNotificationSettings?
   privacySettings      UserPrivacySettings?
@@ -47,13 +47,13 @@ model User {
   securitySettings     UserSecuritySettings?
 
   // Новые функции
-  auditLogs    AuditLog[]
-  studyPlans   StudyPlan[]
-  quizAttempts QuizAttempt[]
-  badges       UserBadge[]
-  notes        StudyNote[]
-  sessionsAuth Session[]           
-  workExperiences WorkExperience[]       // Добавлено
+  auditLogs            AuditLog[]
+  studyPlans           StudyPlan[]
+  quizAttempts         QuizAttempt[]
+  badges               UserBadge[]
+  notes                StudyNote[]
+  sessionsAuth         Session[]           
+  workExperiences      WorkExperience[]       // Добавлено
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,8 +118,8 @@ model Course {
   duration           Int?                // Общая длительность в минутах
   
   // Инструктор
-  instructorId       String
-  instructor         User                @relation("AuthoredCourses", fields: [instructorId], references: [id], onDelete: Restrict)
+  instructorId       String?
+  instructor         User? @relation("AuthoredCourses", fields: [instructorId], references: [id], onDelete: SetNull)
   
   // Содержимое
   chapters           CourseChapter[]

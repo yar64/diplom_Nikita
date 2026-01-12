@@ -247,16 +247,35 @@
 
     const { headers, data, filteredUsers } = prepareTableData();
 
-    const handleDeleteUser = async () => {
-      if (!userToDelete) return;
+   const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
 
+    try {
       const result = await deleteUser(userToDelete.id);
+
       if (result.success) {
-        await loadUsers();
+        // ⚠️ ПРОБЛЕМА: Делаем задержку 500ms, а потом loadUsers
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadUsers(); // ⬅️ Это может занять время
+
+        setIsDeleteModalOpen(false); // ⬅️ Закрываем ПОСЛЕ загрузки
+        setUserToDelete(null);
+      } else {
+        // ⚠️ ПРОБЛЕМА: При ошибке окно НЕ закрывается!
+        alert(result.error);
+        // Модальное окно остается открытым с ошибкой
       }
-      setIsDeleteModalOpen(false);
-      setUserToDelete(null);
-    };
+    } catch (error) {
+      // ⚠️ ПРОБЛЕМА: При исключении окно НЕ закрывается!
+      alert("Произошла непредвиденная ошибка");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+// Добавьте состояние в компонент
+const [isDeleting, setIsDeleting] = useState(false);
 
     const handleUserSuccess = () => {
       loadUsers();
@@ -469,7 +488,8 @@
               </div>
             </div>
           }
-          confirmLabel="Удалить пользователя"
+          confirmLabel={isDeleting ? "Удаление..." : "Удалить пользователя"}
+          isConfirming={isDeleting}  // Передаем состояние загрузки
           variant="delete"
         />
       </div>

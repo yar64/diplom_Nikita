@@ -1,3 +1,4 @@
+// server/auth.actions.ts
 'use server';
 
 import bcrypt from 'bcryptjs';
@@ -52,8 +53,10 @@ export async function registerUser(formData: FormData) {
         if (existingUser) {
             return {
                 success: false,
+                error: 'Пользователь с таким email или именем уже существует',
                 errors: {
-                    general: 'Пользователь с таким email или именем уже существует'
+                    email: existingUser.email === validatedData.email ? 'Email уже используется' : '',
+                    username: existingUser.username === validatedData.username ? 'Имя пользователя уже используется' : ''
                 }
             };
         }
@@ -70,26 +73,35 @@ export async function registerUser(formData: FormData) {
                 email: validatedData.email,
                 password: hashedPassword,
                 role: 'USER',
-                profile: {
-                    create: {
-                        bio: '',
-                        avatar: '',
-                        socialLinks: {},
-                    }
-                },
+                // Создаем настройки пользователя согласно схеме
                 settings: {
                     create: {
                         emailNotifications: true,
                         pushNotifications: true,
-                        privacyLevel: 'PUBLIC',
+                        goalReminders: true,
+                        weeklyReports: true,
+                        mentorNotifications: true,
+                        communityUpdates: true,
+                        defaultDifficulty: 'BEGINNER',
+                        autoGenerateGoals: false,
+                        studyReminders: true,
+                        reminderTime: '20:00'
                     }
                 },
+                // Создаем статистику пользователя согласно схеме
                 stats: {
                     create: {
                         totalStudyTime: 0,
-                        completedCourses: 0,
-                        completedProjects: 0,
-                        skillPoints: 0,
+                        completedGoals: 0,
+                        skillsLearned: 0,
+                        currentStreak: 0,
+                        longestStreak: 0,
+                        weeklyProgress: 0,
+                        monthlyProgress: 0,
+                        badgesEarned: 0,
+                        quizzesPassed: 0,
+                        coursesEnrolled: 0,
+                        coursesCompleted: 0
                     }
                 }
             },
@@ -99,10 +111,11 @@ export async function registerUser(formData: FormData) {
                 username: true,
                 firstName: true,
                 lastName: true,
+                role: true,
             }
         });
 
-        // Создаем сессию (без JWT, используем базу данных)
+        // Создаем сессию
         const sessionToken = await createSession(user.id);
 
         return {
@@ -114,21 +127,39 @@ export async function registerUser(formData: FormData) {
     } catch (error) {
         console.error('Ошибка регистрации:', error);
 
+        // Обработка ошибок валидации
         if (error instanceof z.ZodError) {
-            const errors: Record<string, string> = {};
-            error.errors.forEach((err) => {
-                if (err.path) {
-                    errors[err.path[0]] = err.message;
+            // Создаем объект для ошибок
+            const validationErrors: Record<string, string> = {};
+            
+            // Собираем все ошибки
+            for (const issue of error.issues) {
+                if (issue.path && issue.path.length > 0) {
+                    const fieldName = issue.path[0] as string;
+                    validationErrors[fieldName] = issue.message;
                 }
-            });
-            return { success: false, errors };
+            }
+            
+            return { 
+                success: false, 
+                error: 'Ошибка валидации данных',
+                errors: validationErrors 
+            };
+        }
+
+        // Обработка ошибок базы данных
+        if (error instanceof Error) {
+            if (error.message.includes('P2002')) { // Unique constraint violation
+                return {
+                    success: false,
+                    error: 'Пользователь с такими данными уже существует'
+                };
+            }
         }
 
         return {
             success: false,
-            errors: {
-                general: 'Произошла ошибка при регистрации'
-            }
+            error: 'Произошла ошибка при регистрации'
         };
     }
 }
@@ -165,9 +196,7 @@ export async function loginUser(formData: FormData) {
         if (!user) {
             return {
                 success: false,
-                errors: {
-                    general: 'Неверный email или пароль'
-                }
+                error: 'Неверный email или пароль'
             };
         }
 
@@ -177,20 +206,12 @@ export async function loginUser(formData: FormData) {
         if (!isPasswordValid) {
             return {
                 success: false,
-                errors: {
-                    general: 'Неверный email или пароль'
-                }
+                error: 'Неверный email или пароль'
             };
         }
 
         // Создаем сессию
         const sessionToken = await createSession(user.id);
-
-        // Обновляем последний вход
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() }
-        });
 
         const { password, ...userWithoutPassword } = user;
 
@@ -203,21 +224,27 @@ export async function loginUser(formData: FormData) {
     } catch (error) {
         console.error('Ошибка входа:', error);
 
+        // Обработка ошибок валидации
         if (error instanceof z.ZodError) {
-            const errors: Record<string, string> = {};
-            error.errors.forEach((err) => {
-                if (err.path) {
-                    errors[err.path[0]] = err.message;
+            const validationErrors: Record<string, string> = {};
+            
+            for (const issue of error.issues) {
+                if (issue.path && issue.path.length > 0) {
+                    const fieldName = issue.path[0] as string;
+                    validationErrors[fieldName] = issue.message;
                 }
-            });
-            return { success: false, errors };
+            }
+            
+            return { 
+                success: false, 
+                error: 'Ошибка валидации данных',
+                errors: validationErrors 
+            };
         }
 
         return {
             success: false,
-            errors: {
-                general: 'Произошла ошибка при входе'
-            }
+            error: 'Произошла ошибка при входе'
         };
     }
 }
@@ -245,9 +272,7 @@ export async function logoutUser() {
         console.error('Ошибка выхода:', error);
         return {
             success: false,
-            errors: {
-                general: 'Произошла ошибка при выходе'
-            }
+            error: 'Произошла ошибка при выходе'
         };
     }
 }
@@ -297,7 +322,9 @@ export async function getCurrentUser() {
                         firstName: true,
                         lastName: true,
                         role: true,
-                        profile: true,
+                        avatar: true,
+                        bio: true,
+                        settings: true,
                         stats: true,
                     }
                 }
