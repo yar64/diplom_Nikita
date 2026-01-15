@@ -13,7 +13,8 @@ import {
   BarChart3,
   X,
   RefreshCw,
-} from "lucide-react";
+  ChevronRight,
+} from 'lucide-react';
 import { Table } from "../../../components/admin/share/Table";
 import { StatCard } from "../../../components/admin/ui/data-display/StatCard";
 import { Tabs } from "../../../components/admin/share/Tabs";
@@ -521,43 +522,94 @@ export default function CoursesPage() {
     return { headers, data };
   };
 
-  // Данные для таблицы категорий
+  // Данные для таблицы категорий (иерархическое отображение)
   const getCategoriesTableData = () => {
-    const categoriesToDisplay = fullCategories;
+    // Сортируем категории для иерархического отображения
+    const sortedCategories = [...fullCategories].sort((a, b) => {
+      // Сначала по parentId (корневые категории первыми)
+      if (!a.parentId && b.parentId) return -1;
+      if (a.parentId && !b.parentId) return 1;
+
+      // Затем по order
+      if (a.order !== b.order) return a.order - b.order;
+
+      // Затем по названию
+      return a.name.localeCompare(b.name);
+    });
 
     const headers = [
       "Название категории",
+      "Родительская",
       "Курсов",
       "Студентов",
       "Доход",
+      "Статус",
       "Действия",
     ];
 
-    const data = categoriesToDisplay.map((cat) => {
+    // Находим родительские категории для отображения
+    const getParentCategoryName = (categoryId) => {
+      if (!categoryId) return "—";
+      const parent = fullCategories.find(cat => cat.id === categoryId);
+      return parent ? parent.name : "—";
+    };
+
+    // Определяем отступ для вложенности
+    const getIndentLevel = (category, categoriesList) => {
+      let level = 0;
+      let current = category;
+
+      while (current.parentId) {
+        level++;
+        current = categoriesList.find(cat => cat.id === current.parentId);
+        if (!current) break;
+      }
+
+      return level;
+    };
+
+    const data = sortedCategories.map((cat) => {
+      const indentLevel = getIndentLevel(cat, fullCategories);
+      const indentWidth = indentLevel * 24; // 24px на каждый уровень
+
       return [
         <div key={cat.id} className="flex items-center space-x-3">
+          <div style={{ width: `${indentWidth}px` }}></div>
           <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: cat.color || "#6366f1" }}
           >
-            <Folder className="w-5 h-5 text-white" />
+            {indentLevel > 0 ? (
+              <ChevronRight className="w-5 h-5 text-white" />
+            ) : (
+              <Folder className="w-5 h-5 text-white" />
+            )}
           </div>
           <div>
             <div className="font-semibold text-gray-900">{cat.name}</div>
             <div className="text-sm text-gray-500 flex items-center space-x-2">
               <span>{cat.slug || "нет slug"}</span>
               <span>•</span>
-              <span
-                className={`px-2 py-0.5 text-xs rounded-full ${
-                  cat.isActive
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {cat.isActive ? "Активна" : "Неактивна"}
-              </span>
+              <span>#{cat.order}</span>
             </div>
           </div>
+        </div>,
+        <div key={`${cat.id}-parent`}>
+          {cat.parentId ? (
+            <div className="flex items-center space-x-2">
+              <div
+                className="w-6 h-6 rounded flex items-center justify-center"
+                style={{ backgroundColor: fullCategories.find(p => p.id === cat.parentId)?.color || '#ccc' }}
+              >
+                <Folder className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm text-gray-700">
+                {getParentCategoryName(cat.parentId)}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm text-gray-500 italic">Корневая категория</span>
+          )}
         </div>,
         <div key={`${cat.id}-count`} className="text-center">
           <div className="text-lg font-bold text-blue-600">{cat.coursesCount || 0}</div>
@@ -574,6 +626,14 @@ export default function CoursesPage() {
             {cat.revenue?.toLocaleString("ru-RU") || 0} ₽
           </div>
           <div className="text-xs text-gray-500">доход</div>
+        </div>,
+        <div key={`${cat.id}-status`}>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${cat.isActive
+              ? "bg-green-100 text-green-800"
+              : "bg-red-100 text-red-800"
+            }`}>
+            {cat.isActive ? "Активна" : "Неактивна"}
+          </span>
         </div>,
         <div key={`${cat.id}-actions`}>
           <ActionButton

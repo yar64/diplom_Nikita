@@ -755,3 +755,66 @@ export async function getFullCategories() {
     }
   }
 }
+
+// Функция для получения иерархических категорий
+export async function getHierarchicalCategories() {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        children: {
+          where: { isActive: true },
+          include: {
+            children: {
+              where: { isActive: true },
+              include: {
+                _count: {
+                  select: { courses: true }
+                }
+              }
+            },
+            _count: {
+              select: { courses: true }
+            }
+          }
+        },
+        _count: {
+          select: { courses: true }
+        }
+      },
+      orderBy: [
+        { order: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+
+    // Фильтруем только родительские категории (у которых нет parentId)
+    const rootCategories = categories.filter(cat => !cat.parentId)
+
+    // Форматируем в нужную структуру
+    const formatCategory = (cat) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: cat._count?.courses || 0,
+      children: cat.children?.map(child => ({
+        id: child.id,
+        name: child.name,
+        slug: child.slug,
+        count: child._count?.courses || 0,
+        children: child.children?.map(grandChild => ({
+          id: grandChild.id,
+          name: grandChild.name,
+          slug: grandChild.slug,
+          count: grandChild._count?.courses || 0
+        })) || []
+      })) || []
+    })
+
+    return rootCategories.map(formatCategory)
+
+  } catch (error) {
+    console.error('Error fetching hierarchical categories:', error)
+    return []
+  }
+}

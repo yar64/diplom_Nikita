@@ -15,6 +15,7 @@ interface CreateCategoryData {
   isActive?: boolean
   seoTitle?: string
   seoDescription?: string
+  parentId?: string | null
 }
 
 interface UpdateCategoryData {
@@ -27,6 +28,7 @@ interface UpdateCategoryData {
   isActive?: boolean
   seoTitle?: string
   seoDescription?: string
+  parentId?: string | null
 }
 
 // Генерация slug из названия
@@ -40,7 +42,7 @@ function generateSlug(name: string): string {
 }
 
 // server/category.actions.ts
-export async function createCategory(categoryData: any) {
+export async function createCategory(categoryData: CreateCategoryData) {
   try {
     // Валидация обязательных полей
     if (!categoryData.name || !categoryData.name.trim()) {
@@ -84,6 +86,7 @@ export async function createCategory(categoryData: any) {
         order: parseInt(categoryData.order) || 0,
         seoTitle: categoryData.seoTitle?.trim() || '',
         seoDescription: categoryData.seoDescription?.trim() || '',
+        parentId: categoryData.parentId || null,
         coursesCount: 0,
         studentsCount: 0,
         revenue: 0
@@ -174,7 +177,8 @@ export async function updateCategory(id: string, categoryData: UpdateCategoryDat
     if (categoryData.order !== undefined) updateData.order = categoryData.order
     if (categoryData.seoTitle !== undefined) updateData.seoTitle = categoryData.seoTitle
     if (categoryData.seoDescription !== undefined) updateData.seoDescription = categoryData.seoDescription
-
+    if (categoryData.parentId !== undefined) updateData.parentId = categoryData.parentId
+  
     // Обновляем категорию
     const updatedCategory = await prisma.category.update({
       where: { id },
@@ -516,6 +520,129 @@ export async function moveCoursesToCategory(
     return { success: false, error: 'Ошибка перемещения курсов' }
   }
 }
+
+
+// Получить иерархические категории для фильтра
+// Получить иерархические категории для фильтра
+export async function getHierarchicalCategories() {
+  try {
+    // Получаем ВСЕ активные категории
+    const allCategories = await prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        _count: {
+          select: { courses: true }
+        }
+      },
+      orderBy: [
+        { order: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+
+    // Создаем функцию для построения дерева
+    const buildTree = (parentId: string | null) => {
+      const categories = allCategories.filter(cat => cat.parentId === parentId)
+
+      return categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        count: category._count?.courses || 0,
+        children: buildTree(category.id) // Рекурсивно добавляем детей
+      }))
+    }
+
+    // Строим дерево, начиная с корневых категорий (parentId === null)
+    return buildTree(null)
+
+  } catch (error) {
+    console.error('Error fetching hierarchical categories:', error)
+    return []
+  }
+}
+
+// Поиск категорий по запросу
+export async function searchCategories(query: string) {
+  try {
+    const categories = await prisma.category.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: query } },
+          { description: { contains: query } },
+          { slug: { contains: query } }
+        ]
+      },
+      include: {
+        parent: {
+          select: { name: true }
+        },
+        _count: {
+          select: { courses: true }
+        }
+      },
+      take: 10
+    })
+
+    return categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      parentName: cat.parent?.name,
+      coursesCount: cat._count.courses
+    }))
+
+  } catch (error) {
+    console.error('Error searching categories:', error)
+    return []
+  }
+}
+
+
+// Получить все категории для выбора родительской категории
+export async function getAllCategories() {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            color: true
+          }
+        },
+        _count: {
+          select: { courses: true }
+        }
+      },
+      orderBy: [
+        { parentId: 'asc' },
+        { order: 'asc' },
+        { name: 'asc' }
+      ]
+    });
+
+    return categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      color: cat.color,
+      parentId: cat.parentId,
+      parent: cat.parent,
+      order: cat.order,
+      isActive: cat.isActive,
+      coursesCount: cat._count.courses
+    }));
+
+  } catch (error) {
+    console.error('Error fetching all categories:', error);
+    return [];
+  }
+}
+
+
 
 // Простая функция для получения названий категорий (для обратной совместимости)
 export async function getCourseCategories() {

@@ -1,7 +1,7 @@
 // components/admin/ui/modals/CategoryModal.jsx
 'use client';
 import { useState, useEffect } from 'react';
-import { 
+import {
   Folder,
   Hash,
   FileText,
@@ -11,10 +11,13 @@ import {
   Eye,
   CheckCircle,
   BarChart3,
-  AlertCircle
+  AlertCircle,
+  Layers,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { FormModal } from '../../forms/FormModal';
-import { createCategory, updateCategory } from '../../../../server/category.actions';
+import { createCategory, updateCategory, getAllCategories } from '../../../../server/category.actions';
 
 export function CategoryModal({ 
   isOpen, 
@@ -26,6 +29,9 @@ export function CategoryModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
+  const [allCategories, setAllCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [expandedParentId, setExpandedParentId] = useState(null);
 
   function getInitialFormData(categoryData = null) {
     if (categoryData) {
@@ -40,11 +46,12 @@ export function CategoryModal({
         seoTitle: categoryData.seoTitle || '',
         seoDescription: categoryData.seoDescription || '',
         slug: categoryData.slug || '',
+        parentId: categoryData.parentId || null, // Добавляем parentId
         coursesCount: categoryData.coursesCount || 0,
         studentsCount: categoryData.studentsCount || 0
       };
     }
-    
+
     return {
       name: '',
       description: '',
@@ -55,16 +62,31 @@ export function CategoryModal({
       seoTitle: '',
       seoDescription: '',
       slug: '',
+      parentId: null, // Добавляем parentId
       coursesCount: 0,
       studentsCount: 0
     };
   }
+  // Загрузка всех категорий для выбора родителя
+  const loadAllCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const categories = await getAllCategories();
+      setAllCategories(categories);
+    } catch (error) {
+      console.error('Error loading categories for parent selection:', error);
+      setAllCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
       setFormData(getInitialFormData(category));
       setError('');
       setValidationErrors({});
+      loadAllCategories();
     }
   }, [category, isOpen]);
 
@@ -146,7 +168,8 @@ export function CategoryModal({
         isActive: formData.isActive,
         order: parseInt(formData.order) || 0,
         seoTitle: formData.seoTitle?.trim() || '',
-        seoDescription: formData.seoDescription?.trim() || ''
+        seoDescription: formData.seoDescription?.trim() || '',
+        parentId: formData.parentId || null
       };
     
       let result;
@@ -207,28 +230,31 @@ export function CategoryModal({
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       setFormData(prev => ({
         ...prev,
         [name]: e.target.checked
+      }));
+    } else if (type === 'radio') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value === 'null' ? null : value
       }));
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
-      
-      // Очищаем ошибку для этого поля при изменении
-      if (validationErrors[name]) {
-        setValidationErrors(prev => ({
-          ...prev,
-          [name]: undefined
-        }));
-      }
     }
-    
-    // Очищаем общую ошибку при изменении формы
+
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }));
+    }
+
     if (error) {
       setError('');
     }
@@ -313,6 +339,129 @@ export function CategoryModal({
       )}
 
       <div className="space-y-6">
+        {/* Иерархия категорий */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Layers className="w-5 h-5 mr-2" />
+            Иерархия категорий
+          </h3>
+
+          <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Родительская категория
+            </label>
+
+            {loadingCategories ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="text-sm text-gray-500 mt-2">Загрузка категорий...</p>
+              </div>
+            ) : (
+              <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                <div className="space-y-1">
+                  {/* Опция "Без родительской категории" */}
+                  <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="radio"
+                      name="parentId"
+                      value="null"
+                      checked={formData.parentId === null}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                      disabled={isLoading}
+                    />
+                    <div className="ml-3 flex items-center">
+                      <Layers className="w-4 h-4 text-gray-400 mr-2" />
+                      <span className="text-sm text-gray-900 font-medium">
+                        Без родительской категории (корневая)
+                      </span>
+                    </div>
+                  </label>
+
+                  <div className="border-t border-gray-200 pt-2">
+                    {allCategories
+                      .filter(cat => !cat.parentId) // Только корневые категории
+                      .map(cat => (
+                        <div key={cat.id}>
+                          <label className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
+                            <input
+                              type="radio"
+                              name="parentId"
+                              value={cat.id}
+                              checked={formData.parentId === cat.id}
+                              onChange={handleChange}
+                              className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                              disabled={isLoading || cat.id === category?.id}
+                            />
+                            <div className="ml-3 flex items-center">
+                              <div
+                                className="w-4 h-4 rounded mr-2 flex-shrink-0"
+                                style={{ backgroundColor: cat.color || '#6366f1' }}
+                              ></div>
+                              <span className="text-sm text-gray-900">{cat.name}</span>
+                            </div>
+                          </label>
+
+                          {/* Подкатегории */}
+                          {allCategories
+                            .filter(subCat => subCat.parentId === cat.id)
+                            .map(subCat => (
+                              <label
+                                key={subCat.id}
+                                className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer ml-6"
+                              >
+                                <input
+                                  type="radio"
+                                  name="parentId"
+                                  value={subCat.id}
+                                  checked={formData.parentId === subCat.id}
+                                  onChange={handleChange}
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
+                                  disabled={isLoading || subCat.id === category?.id}
+                                />
+                                <div className="ml-3 flex items-center">
+                                  <ChevronRight className="w-3 h-3 text-gray-400 mr-2" />
+                                  <div
+                                    className="w-4 h-4 rounded mr-2 flex-shrink-0"
+                                    style={{ backgroundColor: subCat.color || '#6366f1' }}
+                                  ></div>
+                                  <span className="text-sm text-gray-900">{subCat.name}</span>
+                                </div>
+                              </label>
+                            ))}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {validationErrors.parentId && (
+              <div className="flex items-center mt-1 text-red-600 text-xs">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                <span>{validationErrors.parentId}</span>
+              </div>
+            )}
+
+            {formData.parentId && allCategories.find(c => c.id === formData.parentId) && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Эта категория будет подкатегорией для: <strong>
+                    {allCategories.find(c => c.id === formData.parentId)?.name}
+                  </strong>
+                </p>
+              </div>
+            )}
+
+            {formData.parentId === null && (
+              <div className="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  Эта категория будет отображаться как <strong>корневая</strong> в иерархии
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
         {/* Основная информация */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">

@@ -280,10 +280,15 @@ model Category {
   seoTitle            String?
   seoDescription      String?
   
+  // Иерархия
+  parentId            String?
+  parent              Category? @relation("CategoryToCategory", fields: [parentId], references: [id])
+  children            Category[] @relation("CategoryToCategory")
+  
   // Статистика
   coursesCount        Int      @default(0)
   studentsCount       Int      @default(0)
-  revenue             Float    @default(0)  // Добавляем это поле
+  revenue             Float    @default(0)
   
   // Связи
   courses             Course[]
@@ -292,6 +297,7 @@ model Category {
   updatedAt           DateTime @updatedAt
 
   @@map("categories")
+  @@index([parentId])
 }
 
 model Skill {
